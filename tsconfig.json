@@ -1,0 +1,24 @@
+{
+  "extends": "@tsconfig/node-lts-strictest/tsconfig.json",
+  "compilerOptions": {
+    "importsNotUsedAsValues": "remove",
+    "noPropertyAccessFromIndexSignature": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitOverride": false,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "target": "es6",
+    "exactOptionalPropertyTypes": false
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "coverage",
+    "node_modules"
+  ]
+}
