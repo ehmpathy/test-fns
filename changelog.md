@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/ehmpathy/test-fns/compare/v1.0.1...v1.0.2) (2023-09-16)
+
+
+### Bug Fixes
+
+* **defs:** enable .skip and .only ([2b1a68a](https://github.com/ehmpathy/test-fns/commit/2b1a68ab2c7d115549f6e67cd8e4ffb22ed234bf))
+
 ## [1.0.1](https://github.com/ehmpathy/test-fns/compare/v1.0.0...v1.0.1) (2023-09-16)
 
 
