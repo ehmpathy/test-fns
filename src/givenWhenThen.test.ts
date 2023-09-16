@@ -13,6 +13,9 @@ describe('doesPlantNeedWater', () => {
       then('it should return true', () => {
         expect(doesPlantNeedWater(plant)).toEqual(true);
       });
+      then.skip('it should be possible to skip a test too', () => {
+        throw new Error('should have been skipped');
+      });
     });
   });
 });
