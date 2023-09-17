@@ -78,5 +78,8 @@
       "path": "./node_modules/cz-conventional-changelog"
     }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@ehmpathy/error-fns": "1.0.2"
+  }
 }
