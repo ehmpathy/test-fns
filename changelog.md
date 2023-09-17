@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/ehmpathy/test-fns/compare/v1.0.2...v1.0.3) (2023-09-17)
+
+
+### Bug Fixes
+
+* **pkg:** forward the getError method from error-fns for convinience ([365b2d2](https://github.com/ehmpathy/test-fns/commit/365b2d23c8aff761ccc43cb84a4a748097cebbce))
+
 ## [1.0.2](https://github.com/ehmpathy/test-fns/compare/v1.0.1...v1.0.2) (2023-09-16)
 
 
