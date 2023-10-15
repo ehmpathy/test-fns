@@ -23,7 +23,8 @@ describe('doesPlantNeedWater', () => {
         hydration: 'WET',
       };
       then(
-        { what: 'it should return false', why: 'because it has enough water' },
+        'it should return false',
+        { because: 'because it has enough water' },
         () => {
           expect(doesPlantNeedWater(plant)).toEqual(false);
         },
