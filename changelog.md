@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/ehmpathy/test-fns/compare/v1.1.0...v1.1.1) (2023-10-15)
+
+
+### Bug Fixes
+
+* **why:** specify why of then in less visually large way ([0a673c2](https://github.com/ehmpathy/test-fns/commit/0a673c22a688d48785cf954fcae2f72c8bf537c7))
+
 ## [1.1.0](https://github.com/ehmpathy/test-fns/compare/v1.0.3...v1.1.0) (2023-10-15)
 
 
