@@ -17,5 +17,17 @@ describe('doesPlantNeedWater', () => {
         throw new Error('should have been skipped');
       });
     });
+    when('the plant has enough water', () => {
+      const plant: Plant = {
+        id: 7,
+        hydration: 'WET',
+      };
+      then(
+        { what: 'it should return false', why: 'because it has enough water' },
+        () => {
+          expect(doesPlantNeedWater(plant)).toEqual(false);
+        },
+      );
+    });
   });
 });

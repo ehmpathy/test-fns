@@ -1,3 +1,8 @@
+type ExplainableDescription = string | { what: string; why: string };
+const castExplainableDescriptionToString = (
+  desc: ExplainableDescription,
+): string => (typeof desc === 'string' ? desc : desc.what); // note: we dont report the why in the rest report, but we allow users to specify it
+
 interface Describe {
   (desc: string, fn: () => void): void;
 
@@ -8,13 +13,13 @@ interface Describe {
   skip: (desc: string, fn: () => void) => void;
 }
 interface Test {
-  (desc: string, fn: () => Promise<void> | void): void;
+  (desc: ExplainableDescription, fn: () => Promise<void> | void): void;
 
   /** Only runs this test for the current file */
-  only: (desc: string, fn: () => Promise<void> | void) => void;
+  only: (desc: ExplainableDescription, fn: () => Promise<void> | void) => void;
 
   /** Skips running this test */
-  skip: (desc: string, fn: () => Promise<void> | void) => void;
+  skip: (desc: ExplainableDescription, fn: () => Promise<void> | void) => void;
 }
 
 export const given: Describe = (
@@ -36,10 +41,16 @@ when.skip = (desc: string, fn: () => void): void =>
   describe.skip(`when: ${desc}`, fn);
 
 export const then: Test = (
-  desc: string,
+  desc: ExplainableDescription,
   fn: () => Promise<void> | void,
-): void => test(`then: ${desc}`, fn as any);
-then.only = (desc: string, fn: () => Promise<void> | void): void =>
-  test.only(`then: ${desc}`, fn as any);
-then.skip = (desc: string, fn: () => Promise<void> | void): void =>
-  test.skip(`then: ${desc}`, fn as any);
+): void => test(`then: ${castExplainableDescriptionToString(desc)}`, fn as any);
+then.only = (
+  desc: ExplainableDescription,
+  fn: () => Promise<void> | void,
+): void =>
+  test.only(`then: ${castExplainableDescriptionToString(desc)}`, fn as any);
+then.skip = (
+  desc: ExplainableDescription,
+  fn: () => Promise<void> | void,
+): void =>
+  test.skip(`then: ${castExplainableDescriptionToString(desc)}`, fn as any);
