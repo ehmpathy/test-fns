@@ -31,4 +31,30 @@ describe('doesPlantNeedWater', () => {
       );
     });
   });
+  given.runIf(false)('runIf=false', () => {
+    then('should be skipped', () => {
+      throw new Error('should not have been run');
+    });
+  });
+  given.skipIf(false)('skipIf=false', () => {
+    when.skipIf(true)('skipIf=true', () => {
+      then('should be skipped', () => {
+        throw new Error('should not have been run');
+      });
+    });
+    when.skipIf(false)('skipIf=false', () => {
+      then.skipIf(true)('this should be skipped', () => {
+        throw new Error('should not have been run');
+      });
+      then.skipIf(false)('this should run', () => {
+        expect(true).toEqual(true);
+      });
+      then.runIf(false)('this should be skipped', () => {
+        throw new Error('should not have been run');
+      });
+      then.runIf(true)('this should run', () => {
+        expect(true).toEqual(true);
+      });
+    });
+  });
 });

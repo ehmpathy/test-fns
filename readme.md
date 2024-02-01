@@ -50,3 +50,19 @@ produces
       when: the plant doesnt have enough water
         ✓ then: it should return true (1 ms)
 ```
+
+# features
+
+### .runIf(condition) && .skipIf(condition)
+
+skip running the suite if the condition is not met
+
+```ts
+describe('your test', () => {
+  given.runIf(onLocalMachine)('some test that should only run locally', () => {
+    then.skipIf(onProduction)('some test that should not run against production', () => {
+      expect(onProduction).toBeFalse()
+    })
+  })
+})
+```
