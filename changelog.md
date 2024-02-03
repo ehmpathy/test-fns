@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/ehmpathy/test-fns/compare/v1.2.0...v1.3.0) (2024-02-03)
+
+
+### Features
+
+* **todo:** add .todo method onto then ([81835a4](https://github.com/ehmpathy/test-fns/commit/81835a4c6610fc9c7079866fa4af555fe97e7204))
+
 ## [1.2.0](https://github.com/ehmpathy/test-fns/compare/v1.1.1...v1.2.0) (2024-02-01)
 
 
