@@ -3,7 +3,7 @@ type TestInputWithReason = [
   { because: string },
   () => Promise<void> | void,
 ];
-type TestInputWithoutReason = [string, () => Promise<void> | void];
+type TestInputWithoutReason = [string, () => Promise<void> | void] | [string];
 type TestInput = TestInputWithReason | TestInputWithoutReason;
 const castToJestTestInput = ({
   input,
@@ -11,7 +11,7 @@ const castToJestTestInput = ({
 }: {
   input: TestInput;
   prefix: string;
-}): [string, (() => Promise<unknown>) | ((cb: any) => void)] => {
+}): [string, (() => Promise<unknown>) | ((cb: any) => void) | undefined] => {
   if (input.length === 3) return [`${prefix}: ${input[0]}`, input[2]]; // we allow users to specify the reason for code readability, but we dont expose this in the test report to decrease noise. folks can look in the code if they want to know "why"
   return [`${prefix}: ${input[0]}`, input[1]]; // otherwise, its the normal input
 };
@@ -39,6 +39,9 @@ interface Test {
 
   /** Skips running this test */
   skip: (...input: TestInput) => void;
+
+  /** Marks the test as one that still needs to be written */
+  todo: (...input: TestInput) => void;
 
   /** Skips running the test, if the condition is satisfied */
   skipIf: (condition: boolean) => (...input: TestInput) => void;
@@ -81,6 +84,8 @@ then.only = (...input: TestInput): void =>
   test.only(...castToJestTestInput({ input, prefix: 'then' }));
 then.skip = (...input: TestInput): void =>
   test.skip(...castToJestTestInput({ input, prefix: 'then' }));
+then.todo = (...input: TestInput): void =>
+  test.todo(...castToJestTestInput({ input: [input[0]], prefix: 'then' })); // note that we only pass the first input, since jest's .todo function throws an error if you pass an implementation fn
 then.skipIf =
   (condition: boolean) =>
   (...input: TestInput): void =>
