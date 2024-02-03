@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/ehmpathy/test-fns/compare/v1.1.1...v1.2.0) (2024-02-01)
+
+
+### Features
+
+* **if:** add .runIf and .skipIf to given,when,then ([7fb0890](https://github.com/ehmpathy/test-fns/commit/7fb0890c381fd1259d6d00e8555e2e94d9ad7948))
+
 ## [1.1.1](https://github.com/ehmpathy/test-fns/compare/v1.1.0...v1.1.1) (2023-10-15)
 
 
