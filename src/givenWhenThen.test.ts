@@ -57,4 +57,29 @@ describe('doesPlantNeedWater', () => {
       });
     });
   });
+  given('a probabilistic test', () => {
+    when('criteria = EVERY', () => {
+      then.repeatably({ attempts: 3, criteria: 'EVERY' })(
+        'it should succeed every time',
+        () => {
+          expect(true).toEqual(true);
+        },
+      );
+      then.repeatably({ attempts: 3, criteria: 'EVERY' })(
+        'it should have access to the attempt counter',
+        ({ attempt }) => {
+          expect(attempt).toBeGreaterThan(0);
+        },
+      );
+    });
+
+    when('criteria = SOME', () => {
+      then.repeatably({ attempts: 5, criteria: 'SOME' })(
+        'it should have access to the attempt counter',
+        async ({ attempt }) => {
+          expect(attempt).toBeGreaterThan(3);
+        },
+      );
+    });
+  });
 });
