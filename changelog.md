@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/ehmpathy/test-fns/compare/v1.3.0...v1.4.0) (2024-06-06)
+
+
+### Features
+
+* **retry:** expose then.repeatably every and some ([b2c56a9](https://github.com/ehmpathy/test-fns/commit/b2c56a9ee0529f65e6146d3d265867796879d0c1))
+
 ## [1.3.0](https://github.com/ehmpathy/test-fns/compare/v1.2.0...v1.3.0) (2024-02-03)
 
 
