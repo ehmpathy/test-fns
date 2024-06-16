@@ -121,7 +121,7 @@ then.only = (...input: TestInput<void>): void =>
 then.skip = (...input: TestInput<void>): void =>
   test.skip(...castToJestTestInput({ input, prefix: 'then' }));
 then.todo = (...input: TestInput<void>): void =>
-  test.todo(...castToJestTestInput({ input: [input[0]], prefix: 'then' })); // note that we only pass the first input, since jest's .todo function throws an error if you pass an implementation fn
+  test.todo(castToJestTestInput({ input: [input[0]], prefix: 'then' })[0]); // note that we only pass the first input, since jest's .todo function throws an error if you pass an implementation fn
 then.skipIf =
   (condition: boolean) =>
   (...input: TestInput<void>): void =>

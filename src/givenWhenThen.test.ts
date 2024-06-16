@@ -16,6 +16,9 @@ describe('doesPlantNeedWater', () => {
       then.skip('it should be possible to skip a test too', () => {
         throw new Error('should have been skipped');
       });
+      then.todo('it should be possible to todo a test too', () => {
+        throw new Error('should have been ignored');
+      });
     });
     when('the plant has enough water', () => {
       const plant: Plant = {
