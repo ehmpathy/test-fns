@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/ehmpathy/test-fns/compare/v1.4.0...v1.4.1) (2024-06-16)
+
+
+### Bug Fixes
+
+* **then:** ensure .todo only passes name of test ([924df7d](https://github.com/ehmpathy/test-fns/commit/924df7dee0428de3aa587dea606ffcd3d0be83df))
+
 ## [1.4.0](https://github.com/ehmpathy/test-fns/compare/v1.3.0...v1.4.0) (2024-06-06)
 
 
