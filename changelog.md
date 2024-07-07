@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/ehmpathy/test-fns/compare/v1.4.1...v1.4.2) (2024-07-07)
+
+
+### Bug Fixes
+
+* **deps:** bump error-fns dep for better devex ([d952ef0](https://github.com/ehmpathy/test-fns/commit/d952ef0685586a767c8040e38150c19b7a8f7e67))
+
 ## [1.4.1](https://github.com/ehmpathy/test-fns/compare/v1.4.0...v1.4.1) (2024-06-16)
 
 
