@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/ehmpathy/test-fns/compare/v1.4.2...v1.5.0) (2024-08-03)
+
+
+### Features
+
+* **uuid:** expose genTestUuid procedure ([2c17d2c](https://github.com/ehmpathy/test-fns/commit/2c17d2c11fd0b54a93667a4d93dad9c5dd15f024))
+
 ## [1.4.2](https://github.com/ehmpathy/test-fns/compare/v1.4.1...v1.4.2) (2024-07-07)
 
 
