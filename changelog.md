@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/ehmpathy/test-fns/compare/v1.5.0...v1.5.1) (2024-08-03)
+
+
+### Bug Fixes
+
+* **practs:** bump practs to latest best ([045fc95](https://github.com/ehmpathy/test-fns/commit/045fc954ddfec002b8379d074090a302096a6f75))
+
 ## [1.5.0](https://github.com/ehmpathy/test-fns/compare/v1.4.2...v1.5.0) (2024-08-03)
 
 
