@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/ehmpathy/test-fns/compare/v1.5.1...v1.6.0) (2025-07-14)
+
+
+### Features
+
+* **prep:** usePrep for async preparation ([edca3e6](https://github.com/ehmpathy/test-fns/commit/edca3e6dbb3599f47d3d7866817fb58f6c8fcd51))
+
+
+### Bug Fixes
+
+* **practs:** bump to latest best ([4c8d8c3](https://github.com/ehmpathy/test-fns/commit/4c8d8c38468bf59e8efa41e30db9a8bc65e7982f))
+
 ## [1.5.1](https://github.com/ehmpathy/test-fns/compare/v1.5.0...v1.5.1) (2024-08-03)
 
 
