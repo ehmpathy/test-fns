@@ -1,4 +1,4 @@
-import { UnexpectedCodePathError } from '@ehmpathy/error-fns';
+import { UnexpectedCodePathError } from 'helpful-errors';
 
 export const getNumberRange = (input: {
   start: number;
@@ -30,7 +30,6 @@ const castToJestTestInput = ({
   prefix: string;
 }): [string, (() => Promise<unknown>) | ((cb: any) => void) | undefined] => {
   const method = input.length === 3 ? input[2] : input[1]; // its always last
-  const methodWithBetterErrorLog = method;
   if (input.length === 3) return [`${prefix}: ${input[0]}`, method]; // we allow users to specify the reason for code readability, but we dont expose this in the test report to decrease noise. folks can look in the code if they want to know "why"
   return [`${prefix}: ${input[0]}`, method]; // otherwise, its the normal input
 };

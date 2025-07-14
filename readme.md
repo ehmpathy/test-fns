@@ -67,3 +67,21 @@ describe('your test', () => {
   })
 })
 ```
+
+### usePrep
+
+prepare test scenarios within a .given/.when block asynchronously, without any `let`s or `beforeAll`s
+
+```ts
+given('an overdue invoice', () => {
+  const invoice = usePrep(async () => {
+    const invoiceOverdue = await ... // your logic
+    return invoiceOverdue;
+  })
+
+  then('it should invoke a reminder', async () => {
+    const result = await nurtureInvoice({ invoice }, context)
+    expect(result.sent.reminder).toEqual(true)
+  })
+})
+```
