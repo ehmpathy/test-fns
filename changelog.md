@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/ehmpathy/test-fns/compare/v1.6.0...v1.7.0) (2025-11-02)
+
+
+### Features
+
+* **prep:** useBeforeAll and useBeforeEach from usePrep ([bb491dc](https://github.com/ehmpathy/test-fns/commit/bb491dc1f19c751b0432e7bbff6a6ef80770b6ab))
+
+
+### Bug Fixes
+
+* **audit:** apply audit fix ([c768e30](https://github.com/ehmpathy/test-fns/commit/c768e309a54daba0725de69fe571d40e451dff8b))
+
 ## [1.6.0](https://github.com/ehmpathy/test-fns/compare/v1.5.1...v1.6.0) (2025-07-14)
 
 
