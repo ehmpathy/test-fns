@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/ehmpathy/test-fns/compare/v1.7.0...v1.7.1) (2025-11-02)
+
+
+### Bug Fixes
+
+* **docs:** update readme examples ([59016db](https://github.com/ehmpathy/test-fns/commit/59016dbe740a1a74afed41c235c0a17c0fbeb26d))
+
 ## [1.7.0](https://github.com/ehmpathy/test-fns/compare/v1.6.0...v1.7.0) (2025-11-02)
 
 
