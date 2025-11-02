@@ -52,3 +52,10 @@ export const usePrep = <T extends Record<string, any>>(
   // return a proxy that looks and feels like toolbox
   return new Proxy(drawer, proxyHandler) as T;
 };
+
+export const useBeforeAll = <T extends Record<string, any>>(
+  setup: Parameters<typeof usePrep<T>>[0],
+): ReturnType<typeof usePrep> => usePrep<T>(setup, { mode: 'beforeAll' });
+export const useBeforeEach = <T extends Record<string, any>>(
+  setup: Parameters<typeof usePrep<T>>[0],
+): ReturnType<typeof usePrep> => usePrep<T>(setup, { mode: 'beforeEach' });
