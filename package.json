@@ -64,7 +64,7 @@
     "@typescript-eslint/eslint-plugin": "7.8.0",
     "@typescript-eslint/parser": "7.8.0",
     "core-js": "3.26.1",
-    "cz-conventional-changelog": "3.3.0",
+    "cz-conventional-changelog": "3.0.1",
     "declapract": "0.12.3",
     "declapract-typescript-ehmpathy": "0.39.9",
     "depcheck": "1.4.3",
