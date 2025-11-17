@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/ehmpathy/test-fns/compare/v1.7.1...v1.7.2) (2025-11-17)
+
+
+### Bug Fixes
+
+* **prep:** useBeforeAll and useBeforeEach typedefs ([b9055e7](https://github.com/ehmpathy/test-fns/commit/b9055e78977e76304ef9e4972bf7338001fa66a5))
+
 ## [1.7.1](https://github.com/ehmpathy/test-fns/compare/v1.7.0...v1.7.1) (2025-11-02)
 
 
