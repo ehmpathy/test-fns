@@ -55,7 +55,7 @@ export const usePrep = <T extends Record<string, any>>(
 
 export const useBeforeAll = <T extends Record<string, any>>(
   setup: Parameters<typeof usePrep<T>>[0],
-): ReturnType<typeof usePrep> => usePrep<T>(setup, { mode: 'beforeAll' });
+): ReturnType<typeof usePrep<T>> => usePrep<T>(setup, { mode: 'beforeAll' });
 export const useBeforeEach = <T extends Record<string, any>>(
   setup: Parameters<typeof usePrep<T>>[0],
-): ReturnType<typeof usePrep> => usePrep<T>(setup, { mode: 'beforeEach' });
+): ReturnType<typeof usePrep<T>> => usePrep<T>(setup, { mode: 'beforeEach' });
