@@ -1,6 +1,6 @@
 import { getError } from 'helpful-errors';
 
-import { given, when, then } from './givenWhenThen';
+import { given, then, when } from './givenWhenThen';
 import { usePrep } from './usePrep';
 
 let callCount = 0;

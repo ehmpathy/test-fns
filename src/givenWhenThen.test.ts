@@ -1,4 +1,4 @@
-import { given, when, then } from './givenWhenThen';
+import { given, then, when } from './givenWhenThen';
 
 type Plant = { id: number; hydration: 'DRY' | 'WET' };
 const doesPlantNeedWater = (plant: Plant) => plant.hydration === 'DRY';
