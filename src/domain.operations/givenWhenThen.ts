@@ -1,5 +1,8 @@
 import { UnexpectedCodePathError } from 'helpful-errors';
 
+import { getTestRunner } from '@src/infra/isomorph.test/detectTestRunner';
+import { globals } from '@src/infra/isomorph.test/getTestGlobals';
+
 export const getNumberRange = (input: {
   start: number;
   end: number;
@@ -22,7 +25,7 @@ type TestInputWithoutReason<TContext extends Record<string, any> | void> =
 type TestInput<TContext extends TestContextShape> =
   | TestInputWithReason<TContext>
   | TestInputWithoutReason<TContext>;
-const castToJestTestInput = ({
+const castToTestInput = ({
   input,
   prefix,
 }: {
@@ -40,10 +43,10 @@ interface Describe {
   /** Only runs the tests inside this `describe` for the current file */
   only: (desc: string, fn: () => void) => void;
 
-  /** Skips running the tests inside this `describe` for the current file */
+  /** Skip the tests inside this `describe` for the current file */
   skip: (desc: string, fn: () => void) => void;
 
-  /** Skips running the tests inside this `describe` for the current file if the condition is satisfied */
+  /** Skip the tests inside this `describe` for the current file if the condition is satisfied */
   skipIf: (condition: boolean) => (desc: string, fn: () => void) => void;
 
   /** Runs the tests inside this `describe` for the current file only if the condition is satisfied */
@@ -55,13 +58,13 @@ interface Test {
   /** Only runs this test for the current file */
   only: (...input: TestInput<void>) => void;
 
-  /** Skips running this test */
+  /** Skip this test */
   skip: (...input: TestInput<void>) => void;
 
   /** Marks the test as one that still needs to be written */
   todo: (...input: TestInput<void>) => void;
 
-  /** Skips running the test, if the condition is satisfied */
+  /** Skip the test if the condition is satisfied */
   skipIf: (condition: boolean) => (...input: TestInput<void>) => void;
 
   /** Runs the test if the condition is satisfied */
@@ -85,42 +88,78 @@ interface Test {
   }) => (...input: TestInput<{ attempt: number }>) => void;
 }
 
+/**
+ * describe the scene (initial state or context) for a group of tests
+ * @example
+ * given('a dry plant', () => {
+ *   when('water needs are checked', () => {
+ *     then('it should return true', () => {
+ *       expect(doesPlantNeedWater(plant)).toBe(true);
+ *     });
+ *   });
+ * });
+ */
 export const given: Describe = (
   desc: string,
   fn: () => Promise<void> | void,
-): void => describe(`given: ${desc}`, fn);
+): void => {
+  globals().describe(`given: ${desc}`, fn);
+};
 given.only = (desc: string, fn: () => void): void =>
-  describe.only(`given: ${desc}`, fn);
+  (globals().describe as any).only(`given: ${desc}`, fn);
 given.skip = (desc: string, fn: () => void): void =>
-  describe.skip(`given: ${desc}`, fn);
+  (globals().describe as any).skip(`given: ${desc}`, fn);
 given.skipIf =
   (condition: boolean) =>
   (desc: string, fn: () => void): void =>
     condition ? given.skip(desc, fn) : given(desc, fn);
 given.runIf = (condition: boolean) => given.skipIf(!condition);
 
+/**
+ * describe the event (action or trigger) that occurs within a scene
+ * @example
+ * when('the user clicks submit', () => {
+ *   then('the form should be submitted', () => {
+ *     expect(form.submitted).toBe(true);
+ *   });
+ * });
+ */
 export const when: Describe = (
   desc: string,
   fn: () => Promise<void> | void,
-): void => describe(`when: ${desc}`, fn);
+): void => {
+  globals().describe(`when: ${desc}`, fn);
+};
 when.only = (desc: string, fn: () => void): void =>
-  describe.only(`when: ${desc}`, fn);
+  (globals().describe as any).only(`when: ${desc}`, fn);
 when.skip = (desc: string, fn: () => void): void =>
-  describe.skip(`when: ${desc}`, fn);
+  (globals().describe as any).skip(`when: ${desc}`, fn);
 when.skipIf =
   (condition: boolean) =>
   (desc: string, fn: () => void): void =>
     condition ? when.skip(desc, fn) : when(desc, fn);
 when.runIf = (condition: boolean) => when.skipIf(!condition);
 
-export const then: Test = (...input: TestInput<void>): void =>
-  test(...castToJestTestInput({ input, prefix: 'then' }));
+/**
+ * assert the effect (expected outcome) that should be observed
+ * @example
+ * then('it should return the correct value', () => {
+ *   expect(result).toBe(expected);
+ * });
+ */
+const then: Test = ((...input: TestInput<void>): void => {
+  globals().test(...castToTestInput({ input, prefix: 'then' }));
+}) as Test;
+
+// add methods to then
 then.only = (...input: TestInput<void>): void =>
-  test.only(...castToJestTestInput({ input, prefix: 'then' }));
+  (globals().test as any).only(...castToTestInput({ input, prefix: 'then' }));
 then.skip = (...input: TestInput<void>): void =>
-  test.skip(...castToJestTestInput({ input, prefix: 'then' }));
+  (globals().test as any).skip(...castToTestInput({ input, prefix: 'then' }));
 then.todo = (...input: TestInput<void>): void =>
-  test.todo(castToJestTestInput({ input: [input[0]], prefix: 'then' })[0]); // note that we only pass the first input, since jest's .todo function throws an error if you pass an implementation fn
+  (globals().test as any).todo(
+    castToTestInput({ input: [input[0]], prefix: 'then' })[0],
+  );
 then.skipIf =
   (condition: boolean) =>
   (...input: TestInput<void>): void =>
@@ -129,29 +168,31 @@ then.runIf = (condition: boolean) => then.skipIf(!condition);
 then.repeatably =
   (configuration) =>
   (...input: TestInput<{ attempt: number }>): void => {
-    // validate the input length
     if (input.length !== 2 && input.length !== 3)
-      throw new UnexpectedCodePathError('unsupported input length', {
-        input,
-      });
+      throw new UnexpectedCodePathError('unsupported input length', { input });
 
-    // support the "SOME" criteria
     if (configuration.criteria === 'SOME') {
-      // use the native "retryTimes"
-      jest.retryTimes(configuration.attempts, { logErrorsBeforeRetry: true });
-
-      // track the number of attempts
+      const runner = getTestRunner();
+      const testFn = globals().test;
       let attempt = 0;
-      beforeEach(() => attempt++);
-
-      // and run the test
-      if (input.length === 2) then(input[0], () => input[1]({ attempt }));
-      if (input.length === 3)
-        then(input[0], input[1], () => input[2]({ attempt }));
+      globals().beforeEach(() => attempt++);
+      const [name, fn] = castToTestInput({
+        input:
+          input.length === 2
+            ? [input[0], () => input[1]({ attempt })]
+            : [input[0], input[1], () => input[2]({ attempt })],
+        prefix: 'then',
+      });
+      if (runner === 'jest') {
+        jest.retryTimes(configuration.attempts, { logErrorsBeforeRetry: true });
+        testFn(name, fn);
+      }
+      if (runner === 'vitest') {
+        (testFn as any)(name, { retry: configuration.attempts }, fn);
+      }
       return;
     }
 
-    // support the "EVERY" criteria
     if (configuration.criteria === 'EVERY') {
       for (const attempt of getNumberRange({
         start: 1,
@@ -167,9 +208,41 @@ then.repeatably =
       return;
     }
 
-    // throw if neither
     throw new UnexpectedCodePathError(
       'configuration.criteria was neither EVERY nor SOME',
       { configuration },
     );
   };
+
+/**
+ * .what = namespace object for BDD-style test helpers
+ * .why = provides vitest-compatible access to given/when/then via `bdd.then()`
+ *        since direct `then` export triggers ESM thenable detection in vitest.
+ *
+ * @see .agent/repo=.this/role=any/briefs/limitation.esm-thenable-then-export.md
+ */
+export const bdd = { given, when, then };
+
+/**
+ * .what = wraps `then` to handle vitest's thenable detection
+ * .why = vitest calls `then(resolve, reject)` on module import; we detect and resolve it
+ *
+ * @see .agent/repo=.this/role=any/briefs/limitation.esm-thenable-then-export.md
+ */
+const thenExportable: Test = ((...input: TestInput<void>): any => {
+  // vitest treats modules with `then` as thenables and calls then(resolve, reject)
+  if (typeof input[0] === 'function') {
+    // resolve with exports that don't have a callable `then` (to break thenable cycle)
+    (input[0] as (v: unknown) => void)({ given, when, bdd, getNumberRange });
+    return;
+  }
+  then(...input);
+}) as Test;
+thenExportable.only = then.only;
+thenExportable.skip = then.skip;
+thenExportable.todo = then.todo;
+thenExportable.skipIf = then.skipIf;
+thenExportable.runIf = then.runIf;
+thenExportable.repeatably = then.repeatably;
+
+export { thenExportable as then };

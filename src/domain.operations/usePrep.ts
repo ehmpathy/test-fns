@@ -1,8 +1,10 @@
 import { UnexpectedCodePathError } from 'helpful-errors';
 
+import { globals } from '@src/infra/isomorph.test/getTestGlobals';
+
 /**
  * .what = declare a resource to be prepared before tests
- * .why = simplifies devexp by letting you write `const thing = usePrep(...)`
+ * .why = simplifies devexp via `const thing = usePrep(...)` syntax
  * .mode =
  *   - 'beforeAll': prepare once for all tests
  *   - 'beforeEach': prepare fresh for each test run
@@ -37,7 +39,8 @@ export const usePrep = <T extends Record<string, any>>(
     },
   };
 
-  const register = options.mode === 'beforeEach' ? beforeEach : beforeAll;
+  const register =
+    options.mode === 'beforeEach' ? globals().beforeEach : globals().beforeAll;
 
   register(async () => {
     toolbox = await setup();
