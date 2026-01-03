@@ -7,9 +7,9 @@ write usecase driven tests systematically for simpler, safer, and more readable 
 
 # purpose
 
-establishes a pattern of writing tests for simpler, safer, and more readable code.
+establishes a pattern to write tests for simpler, safer, and more readable code.
 
-by defining tests in terms of usecases (`given`, `when`, `then`) your tests are
+by tests defined in terms of usecases (`given`, `when`, `then`) your tests are
 - simpler to write
 - easier to read
 - safer to trust
@@ -17,46 +17,109 @@ by defining tests in terms of usecases (`given`, `when`, `then`) your tests are
 # install
 
 ```sh
-npm install --save test-fns
+npm install --save-dev test-fns
+```
+
+# pattern
+
+`given/when/then` is based on [behavior driven design (BDD)](https://en.wikipedia.org/wiki/Behavior-driven_development). it structures tests around:
+- **given** a `scene` (the initial state or context)
+- **when** an `event` occurs (the action or trigger)
+- **then** an `effect` is observed (the expected outcome)
+
+```ts
+given('scene', () =>
+  when('event', () =>
+    then('effect', () => {
+      // assertion
+    })
+  )
+);
 ```
 
 # use
 
+### jest
+
 ```ts
-type Plant = { id: number, hydration: 'DRY' | 'WET' };
-const doesPlantNeedWater = (plant: Plant) => plant.hydration === 'DRY';
+import { given, when, then } from 'test-fns';
 
 describe('doesPlantNeedWater', () => {
-  given('a plant', () => {
-    when('the plant doesnt have enough water', () => {
-      const plant: Plant = {
-        id: 7,
-        hydration: 'DRY',
-      };
+  given('a dry plant', () => {
+    const plant = { id: 7, hydration: 'DRY' };
+
+    when('checked for watering needs', () => {
       then('it should return true', () => {
-        expect(doesPlantNeedWater(plant)).toEqual(true)
-      })
-    })
-  })
-})
+        expect(doesPlantNeedWater(plant)).toEqual(true);
+      });
+    });
+  });
+});
 ```
 
-produces
+### vitest
+
+vitest requires special handling because ESM's thenable protocol prevents direct `then` imports.
+
+**option 1: globals via setup file (recommended)**
+
+```ts
+// vitest.config.ts
+export default defineConfig({
+  test: {
+    setupFiles: ['test-fns/vitest.setup'],
+  },
+});
+
+// your test file - no imports needed
+describe('doesPlantNeedWater', () => {
+  given('a dry plant', () => {
+    const plant = { id: 7, hydration: 'DRY' };
+
+    when('checked for watering needs', () => {
+      then('it should return true', () => {
+        expect(doesPlantNeedWater(plant)).toEqual(true);
+      });
+    });
+  });
+});
+```
+
+**option 2: bdd namespace**
+
+```ts
+import { bdd } from 'test-fns';
+
+describe('doesPlantNeedWater', () => {
+  bdd.given('a dry plant', () => {
+    const plant = { id: 7, hydration: 'DRY' };
+
+    bdd.when('checked for watering needs', () => {
+      bdd.then('it should return true', () => {
+        expect(doesPlantNeedWater(plant)).toEqual(true);
+      });
+    });
+  });
+});
+```
+
+### output
+
+both produce:
 
 ```sh
- PASS  src/givenWhenThen.test.ts
+ PASS  src/plant.test.ts
   doesPlantNeedWater
-    given: a plant
-      when: the plant doesnt have enough water
+    given: a dry plant
+      when: checked for watering needs
         ✓ then: it should return true (1 ms)
 ```
 
 # features
 
-
 ### .runIf(condition) && .skipIf(condition)
 
-skip running the suite if the condition is not met
+skip the suite if the condition is not met
 
 ```ts
 describe('your test', () => {
@@ -68,43 +131,34 @@ describe('your test', () => {
 })
 ```
 
-### usePrep
+### .repeatably(config)
 
-prepare test scenarios within a .given/.when block asynchronously, without any `let`s or `beforeAll`s
-
-`usePrep` accepts a `mode` option to control when setup runs:
-- `mode: 'beforeAll'` - runs setup once for all tests (default)
-- `mode: 'beforeEach'` - runs setup fresh before each test
+run a test multiple times to evaluate repeatability, with environment-aware criteria to prevent CI flakes while enforcing consistency locally
 
 ```ts
-given('an overdue invoice', () => {
-  const invoice = usePrep(async () => {
-    const invoiceOverdue = await ... // your logic
-    return invoiceOverdue;
-  })
-
-  then('it should invoke a reminder', async () => {
-    const result = await nurtureInvoice({ invoice }, context)
-    expect(result.sent.reminder).toEqual(true)
-  })
-})
+then.repeatably({
+  attempts: 3,
+  criteria: process.env.CI ? 'SOME' : 'EVERY',
+})('it should produce consistent results', ({ attempt }) => {
+  const result = generateOutput();
+  expect(result).toMatchSnapshot();
+});
 ```
 
-**useBeforeAll and useBeforeEach are convenience wrappers** around `usePrep`:
-- `useBeforeAll(setup)` is equivalent to `usePrep(setup, { mode: 'beforeAll' })`
-- `useBeforeEach(setup)` is equivalent to `usePrep(setup, { mode: 'beforeEach' })`
-
-Use the named functions for clarity about when setup runs.
+- `attempts`: how many times to run the test
+- `criteria`:
+  - `'EVERY'`: all attempts must pass (strict, for local development)
+  - `'SOME'`: at least one attempt must pass (tolerant, for CI)
 
 ### useBeforeAll
 
-prepare test resources once for all tests in a suite, optimizing setup time for expensive operations
+prepare test resources once for all tests in a suite, to optimize setup time for expensive operations
 
 ```ts
-describe('spaceship refueling system', () => {
+describe('spaceship refuel system', () => {
   given('a spaceship that needs to refuel', () => {
     const spaceship = useBeforeAll(async () => {
-      // This runs once before all tests in this suite
+      // runs once before all tests in this suite
       const ship = await prepareExampleSpaceship();
       await ship.dock();
       return ship;
@@ -137,12 +191,12 @@ describe('spaceship refueling system', () => {
 
 ### useBeforeEach
 
-prepare fresh test resources before each test, ensuring test isolation
+prepare fresh test resources before each test to ensure test isolation
 
 ```ts
 describe('spaceship combat system', () => {
   given('a spaceship in battle', () => {
-    // This runs before each test, ensuring a fresh spaceship
+    // runs before each test to ensure a fresh spaceship
     const spaceship = useBeforeEach(async () => {
       const ship = await prepareExampleSpaceship();
       await ship.resetShields();
@@ -174,12 +228,6 @@ describe('spaceship combat system', () => {
 });
 ```
 
-**When to use each:**
-- `useBeforeAll`: Use when setup is expensive (database connections, API calls) and tests don't modify the resource
-- `useBeforeEach`: Use when tests modify the resource and need isolation between runs
-- `usePrep`: The base function that powers both - use when you want explicit control over the mode or need to dynamically choose between `beforeAll` and `beforeEach`
-
-**Key differences:**
-- All three functions (`usePrep`, `useBeforeAll`, `useBeforeEach`) create a proxy that defers setup until the test framework's lifecycle hooks run
-- `useBeforeAll` and `useBeforeEach` are just clearer, more readable shortcuts for `usePrep` with a specific mode
-- Choose based on readability: use `useBeforeAll`/`useBeforeEach` for explicit intent, or `usePrep` when mode needs to be configurable
+**when to use each:**
+- `useBeforeAll`: use when setup is expensive (database connections, api calls) and tests don't modify the resource
+- `useBeforeEach`: use when tests modify the resource and need isolation between runs

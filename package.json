@@ -16,6 +16,10 @@
   "bugs": "https://github.com/ehmpathy/test-fns/issues",
   "license": "MIT",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./vitest.setup": "./dist/contract/vitest.setup.js"
+  },
   "engines": {
     "node": ">=8.0.0"
   },
@@ -40,11 +44,19 @@
     "test:lint:biome": "biome check --diagnostic-level=error",
     "test:lint:biome:all": "biome check",
     "test:lint": "npm run test:lint:biome && npm run test:lint:deps",
-    "test:unit": "jest -c ./jest.unit.config.ts --forceExit --verbose --passWithNoTests $([ -z $THOROUGH ] && echo '--changedSince=main') $([ -n $RESNAP ] && echo '--updateSnapshot')",
-    "test:integration": "jest -c ./jest.integration.config.ts --forceExit --verbose --passWithNoTests $([ -z $THOROUGH ] && echo '--changedSince=main') $([ -n $RESNAP ] && echo '--updateSnapshot')",
-    "test:acceptance:locally": "npm run build && LOCALLY=true jest -c ./jest.acceptance.config.ts --forceExit --verbose --runInBand --passWithNoTests $([ -n $RESNAP ] && echo '--updateSnapshot')",
+    "test:unit:jest": "jest -c ./jest.unit.config.ts --forceExit --verbose --passWithNoTests $([ -z $THOROUGH ] && echo '--changedSince=main') $([ -n $RESNAP ] && echo '--updateSnapshot')",
+    "test:unit:vitest": "vitest run --config ./vitest.unit.globals.config.ts --passWithNoTests && vitest run --config ./vitest.unit.bdd.config.ts --passWithNoTests",
+    "test:unit": "npm run test:unit:jest && npm run test:unit:vitest",
+    "test:integration:jest": "jest -c ./jest.integration.config.ts --forceExit --verbose --passWithNoTests $([ -z $THOROUGH ] && echo '--changedSince=main') $([ -n $RESNAP ] && echo '--updateSnapshot')",
+    "test:integration:vitest": "vitest run --config ./vitest.integration.config.ts --passWithNoTests",
+    "test:integration": "npm run test:integration:jest && npm run test:integration:vitest",
+    "test:acceptance:jest": "jest -c ./jest.acceptance.config.ts --forceExit --verbose --runInBand --passWithNoTests $([ -n $RESNAP ] && echo '--updateSnapshot')",
+    "test:acceptance:jest:locally": "npm run build && LOCALLY=true npm run test:acceptance:jest",
+    "test:acceptance:vitest": "vitest run --config ./vitest.acceptance.config.ts --passWithNoTests",
+    "test:acceptance:vitest:locally": "npm run build && LOCALLY=true npm run test:acceptance:vitest",
+    "test:acceptance:locally": "npm run test:acceptance:jest:locally && npm run test:acceptance:vitest:locally",
+    "test:acceptance": "npm run test:acceptance:locally",
     "test": "npm run test:commits && npm run test:types && npm run test:format && npm run test:lint && npm run test:unit && npm run test:integration && npm run test:acceptance:locally",
-    "test:acceptance": "npm run build && jest -c ./jest.acceptance.config.ts --forceExit --verbose --runInBand --passWithNoTests $([ -n $RESNAP ] && echo '--updateSnapshot')",
     "prepush": "npm run test && npm run build",
     "prepublish": "npm run build",
     "preversion": "npm run prepush",
@@ -85,6 +97,7 @@
     "tsc-alias": "1.8.10",
     "tsx": "4.21.0",
     "typescript": "5.4.5",
+    "vitest": "4.0.16",
     "yalc": "1.0.0-pre.53"
   },
   "config": {

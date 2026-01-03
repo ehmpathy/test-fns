@@ -45,8 +45,8 @@ describe('usePrep', () => {
     });
   });
 
-  given('accessing the proxy too early', () => {
-    when('getting a property before beforeAll runs', () => {
+  given('proxy accessed too early', () => {
+    when('property is accessed before beforeAll runs', () => {
       const value = usePrep(async () => ({ foo: 'bar' }), {
         mode: 'beforeAll',
       });
@@ -59,7 +59,7 @@ describe('usePrep', () => {
   });
 
   given('return value is accidentally called as function', () => {
-    when('accessing as if it were a callable', () => {
+    when('invoked as a callable', () => {
       const value = usePrep(async () => ({ foo: 'bar' }), {
         mode: 'beforeAll',
       });

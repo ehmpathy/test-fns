@@ -26,10 +26,10 @@ const config: Config = {
     // 'node_modules/(?!(@octokit|universal-user-agent|before-after-hook)/)',
   ],
   testMatch: [
-    // note: order matters
-    '**/*.test.ts',
-    '!**/*.acceptance.test.ts',
-    '!**/*.integration.test.ts',
+    // note: order matters - match only .jest.test.ts files
+    '**/*.jest.test.ts',
+    '!**/*.acceptance.jest.test.ts',
+    '!**/*.integration.jest.test.ts',
     '!**/.yalc/**',
   ],
   setupFilesAfterEnv: ['./jest.unit.env.ts'],

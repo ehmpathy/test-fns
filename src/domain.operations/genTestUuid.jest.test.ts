@@ -5,7 +5,7 @@ describe('genTestUuid', () => {
     const uuid = genTestUuid();
     expect(uuid).toBeTruthy();
   });
-  it('should generate a uuid that is namespaced for testing by whodis', () => {
+  it('should generate a uuid that is namespaced for test use by whodis', () => {
     const uuid = genTestUuid();
     expect(uuid).toMatch(/^beef.*-.*-.*-.*-.*beef$/);
     expect(isTestUuid(uuid)).toEqual(true);

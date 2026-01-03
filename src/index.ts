@@ -1,6 +1,5 @@
-// forward the getError method since it is almost always needed with tests
-export { getError } from 'helpful-errors';
-
-export { genTestUuid } from './genTestUuid';
-export { given, then, when } from './givenWhenThen';
-export { useBeforeAll, useBeforeEach, usePrep } from './usePrep';
+/**
+ * .what = package entry point for test-fns
+ * .why = re-exports from contract layer for public consumption
+ */
+export * from './contract';
