@@ -48,7 +48,7 @@ describe('doesPlantNeedWater', () => {
   given('a dry plant', () => {
     const plant = { id: 7, hydration: 'DRY' };
 
-    when('checked for watering needs', () => {
+    when('water needs are checked', () => {
       then('it should return true', () => {
         expect(doesPlantNeedWater(plant)).toEqual(true);
       });
@@ -59,7 +59,7 @@ describe('doesPlantNeedWater', () => {
 
 ### vitest
 
-vitest requires special handling because ESM's thenable protocol prevents direct `then` imports.
+vitest requires a workaround because ESM's thenable protocol prevents direct `then` imports.
 
 **option 1: globals via setup file (recommended)**
 
@@ -76,7 +76,7 @@ describe('doesPlantNeedWater', () => {
   given('a dry plant', () => {
     const plant = { id: 7, hydration: 'DRY' };
 
-    when('checked for watering needs', () => {
+    when('water needs are checked', () => {
       then('it should return true', () => {
         expect(doesPlantNeedWater(plant)).toEqual(true);
       });
@@ -94,7 +94,7 @@ describe('doesPlantNeedWater', () => {
   bdd.given('a dry plant', () => {
     const plant = { id: 7, hydration: 'DRY' };
 
-    bdd.when('checked for watering needs', () => {
+    bdd.when('water needs are checked', () => {
       bdd.then('it should return true', () => {
         expect(doesPlantNeedWater(plant)).toEqual(true);
       });
@@ -111,7 +111,7 @@ both produce:
  PASS  src/plant.test.ts
   doesPlantNeedWater
     given: a dry plant
-      when: checked for watering needs
+      when: water needs are checked
         ✓ then: it should return true (1 ms)
 ```
 
@@ -133,7 +133,7 @@ describe('your test', () => {
 
 ### .repeatably(config)
 
-run a test multiple times to evaluate repeatability, with environment-aware criteria to prevent CI flakes while enforcing consistency locally
+run a test multiple times to evaluate repeatability, with environment-aware criteria that prevent CI flakes yet enforce consistency locally
 
 ```ts
 then.repeatably({
@@ -150,6 +150,10 @@ then.repeatably({
   - `'EVERY'`: all attempts must pass (strict, for local development)
   - `'SOME'`: at least one attempt must pass (tolerant, for CI)
 
+## hooks
+
+similar to the sync-render constraints that drove react to leverage hooks, we leverage hooks in tests due to those same constraints. test frameworks collect test definitions synchronously, then execute them later. hooks let immutable references to data be declared before the data is rendered via execution — which enables `const` declarations instead of `let` mutations.
+
 ### useBeforeAll
 
 prepare test resources once for all tests in a suite, to optimize setup time for expensive operations
@@ -164,7 +168,7 @@ describe('spaceship refuel system', () => {
       return ship;
     });
 
-    when('no changes are made', () => {
+    when('[t0] no changes yet', () => {
       then('it should be docked', async () => {
         expect(spaceship.isDocked).toEqual(true);
       });
@@ -174,7 +178,7 @@ describe('spaceship refuel system', () => {
       });
     });
 
-    when('it connects to the fuel station', () => {
+    when('[t1] it connects to the fuel station', () => {
       const result = useBeforeAll(async () => await spaceship.connectToFuelStation());
 
       then('it should be connected', async () => {
@@ -203,7 +207,7 @@ describe('spaceship combat system', () => {
       return ship;
     });
 
-    when('no changes are made', () => {
+    when('[t0] no changes yet', () => {
       then('it should have full shields', async () => {
         expect(spaceship.shields).toEqual(100);
       });
@@ -213,7 +217,7 @@ describe('spaceship combat system', () => {
       });
     });
 
-    when('it takes damage', () => {
+    when('[t1] it takes damage', () => {
       const result = useBeforeEach(async () => await spaceship.takeDamage(25));
 
       then('it should reduce shield strength', async () => {
@@ -239,8 +243,8 @@ capture the result of an operation in a `then` block and share it with sibling `
 ```ts
 describe('invoice system', () => {
   given('a customer with an overdue invoice', () => {
-    when('the invoice is processed', () => {
-      const result = useThen('processing completes', async () => {
+    when('[t1] the invoice is processed', () => {
+      const result = useThen('process succeeds', async () => {
         return await processInvoice({ customerId: '123' });
       });
 
@@ -260,51 +264,63 @@ describe('invoice system', () => {
 });
 ```
 
-`useThen` creates a test (`then` block) and returns a proxy to the result. the proxy defers access until the test runs, making the result available to sibling `then` blocks.
+`useThen` creates a test (`then` block) and returns a proxy to the result. the proxy defers access until the test runs, which makes the result available to sibling `then` blocks.
 
 ### useWhen
 
-capture the result of a synchronous operation during test collection
+capture the result of an operation at the `given` level and share it with sibling `when` blocks — ideal for idempotency verification
 
 ```ts
-describe('data transformation', () => {
-  given('raw input data', () => {
-    when('transformations are applied', () => {
-      const normalized = useWhen('normalize data', () => {
-        return normalizeInput({ raw: 'data' });
+describe('user registration', () => {
+  given('a new user email', () => {
+    when('[t0] before any changes', () => {
+      then('user does not exist', async () => {
+        const user = await findUser({ email: 'test@example.com' });
+        expect(user).toBeNull();
+      });
+    });
+
+    const responseFirst = useWhen('[t1] registration is called', () => {
+      const response = useThen('registration succeeds', async () => {
+        return await registerUser({ email: 'test@example.com' });
       });
 
-      const validated = useWhen('validate data', () => {
-        return validateInput(normalized);
+      then('user is created', () => {
+        expect(response.status).toEqual('created');
       });
 
-      then('normalized data is correct', () => {
-        expect(normalized.format).toEqual('standard');
+      return response;
+    });
+
+    when('[t2] registration is repeated', () => {
+      const responseSecond = useThen('registration still succeeds', async () => {
+        return await registerUser({ email: 'test@example.com' });
       });
 
-      then('validation passes', () => {
-        expect(validated.isValid).toEqual(true);
+      then('response is idempotent', () => {
+        expect(responseSecond.id).toEqual(responseFirst.id);
+        expect(responseSecond.status).toEqual(responseFirst.status);
       });
     });
   });
 });
 ```
 
-`useWhen` executes immediately during test collection (not during test execution like `useThen`). use it for synchronous setup operations.
+`useWhen` executes during test collection and returns a value accessible to sibling `when` blocks. use it with `useThen` inside to capture async operation results for cross-block comparisons like idempotency verification.
 
-### choosing the right hook
+### how to choose the right hook
 
 | hook | when to use | execution timing |
 |------|-------------|-----------------|
 | `useBeforeAll` | expensive setup shared across tests | once before all tests |
 | `useBeforeEach` | setup that needs isolation | before each test |
 | `useThen` | capture async operation result in a test | during test execution |
-| `useWhen` | capture sync operation result during setup | during test collection |
+| `useWhen` | wrap a when block and share result with siblings | during test collection |
 
 **key differences:**
 - `useBeforeAll`/`useBeforeEach` - for test fixtures and setup
 - `useThen` - for operations that ARE the test (creates a `then` block)
-- `useWhen` - for synchronous setup during collection phase
+- `useWhen` - wraps a when block at given level, returns result for sibling when blocks (idempotency verification)
 
 ### immutability benefits
 
