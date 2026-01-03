@@ -14,3 +14,5 @@ export {
   useBeforeEach,
   usePrep,
 } from '@src/domain.operations/usePrep';
+export { useThen } from '@src/domain.operations/useThen';
+export { useWhen } from '@src/domain.operations/useWhen';

@@ -231,3 +231,103 @@ describe('spaceship combat system', () => {
 **when to use each:**
 - `useBeforeAll`: use when setup is expensive (database connections, api calls) and tests don't modify the resource
 - `useBeforeEach`: use when tests modify the resource and need isolation between runs
+
+### useThen
+
+capture the result of an operation in a `then` block and share it with sibling `then` blocks, without `let` declarations
+
+```ts
+describe('invoice system', () => {
+  given('a customer with an overdue invoice', () => {
+    when('the invoice is processed', () => {
+      const result = useThen('processing completes', async () => {
+        return await processInvoice({ customerId: '123' });
+      });
+
+      then('it should mark the invoice as sent', () => {
+        expect(result.status).toEqual('sent');
+      });
+
+      then('it should calculate the correct total', () => {
+        expect(result.total).toEqual(150.00);
+      });
+
+      then('it should include the late fee', () => {
+        expect(result.lateFee).toEqual(25.00);
+      });
+    });
+  });
+});
+```
+
+`useThen` creates a test (`then` block) and returns a proxy to the result. the proxy defers access until the test runs, making the result available to sibling `then` blocks.
+
+### useWhen
+
+capture the result of a synchronous operation during test collection
+
+```ts
+describe('data transformation', () => {
+  given('raw input data', () => {
+    when('transformations are applied', () => {
+      const normalized = useWhen('normalize data', () => {
+        return normalizeInput({ raw: 'data' });
+      });
+
+      const validated = useWhen('validate data', () => {
+        return validateInput(normalized);
+      });
+
+      then('normalized data is correct', () => {
+        expect(normalized.format).toEqual('standard');
+      });
+
+      then('validation passes', () => {
+        expect(validated.isValid).toEqual(true);
+      });
+    });
+  });
+});
+```
+
+`useWhen` executes immediately during test collection (not during test execution like `useThen`). use it for synchronous setup operations.
+
+### choosing the right hook
+
+| hook | when to use | execution timing |
+|------|-------------|-----------------|
+| `useBeforeAll` | expensive setup shared across tests | once before all tests |
+| `useBeforeEach` | setup that needs isolation | before each test |
+| `useThen` | capture async operation result in a test | during test execution |
+| `useWhen` | capture sync operation result during setup | during test collection |
+
+**key differences:**
+- `useBeforeAll`/`useBeforeEach` - for test fixtures and setup
+- `useThen` - for operations that ARE the test (creates a `then` block)
+- `useWhen` - for synchronous setup during collection phase
+
+### immutability benefits
+
+these hooks enable immutable test code:
+
+```ts
+// ❌ mutable - requires let
+let result;
+beforeAll(async () => {
+  result = await fetchData();
+});
+it('uses result', () => {
+  expect(result.value).toBe(1);
+});
+
+// ✅ immutable - const only
+const result = useBeforeAll(async () => await fetchData());
+then('uses result', () => {
+  expect(result.value).toBe(1);
+});
+```
+
+benefits of immutability:
+- **safer**: no accidental reassignment or mutation
+- **clearer**: data flow is explicit
+- **simpler**: no need to track when variables are assigned
