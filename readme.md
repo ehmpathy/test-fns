@@ -310,12 +310,12 @@ describe('user registration', () => {
 
 ### how to choose the right hook
 
-| hook | when to use | execution timing |
-|------|-------------|-----------------|
-| `useBeforeAll` | expensive setup shared across tests | once before all tests |
-| `useBeforeEach` | setup that needs isolation | before each test |
-| `useThen` | capture async operation result in a test | during test execution |
-| `useWhen` | wrap a when block and share result with siblings | during test collection |
+| hook            | when to use                                      | execution timing       |
+| --------------- | ------------------------------------------------ | ---------------------- |
+| `useBeforeAll`  | expensive setup shared across tests              | once before all tests  |
+| `useBeforeEach` | setup that needs isolation                       | before each test       |
+| `useThen`       | capture async operation result in a test         | during test execution  |
+| `useWhen`       | wrap a when block and share result with siblings | during test collection |
 
 **key differences:**
 - `useBeforeAll`/`useBeforeEach` - for test fixtures and setup
@@ -347,3 +347,72 @@ benefits of immutability:
 - **safer**: no accidental reassignment or mutation
 - **clearer**: data flow is explicit
 - **simpler**: no need to track when variables are assigned
+
+## utilities
+
+### genTempDir
+
+generates a temporary test directory within the repo's `.temp` folder, with automatic cleanup of stale directories.
+
+**features:**
+- portable across os systems (no os-specific temp dir dependencies)
+- timestamp-prefixed names enable age-based cleanup
+- auto-prunes directories older than 1 hour
+- optional fixture clone for pre-populated test scenarios
+
+**basic usage:**
+
+```ts
+import { genTempDir } from 'test-fns';
+
+describe('file processor', () => {
+  given('a test directory', () => {
+    const testDir = genTempDir();
+
+    when('files are written', () => {
+      then('they exist in the test directory', async () => {
+        await fs.writeFile(path.join(testDir, 'example.txt'), 'content');
+        expect(await fs.stat(path.join(testDir, 'example.txt'))).toBeDefined();
+      });
+    });
+  });
+});
+```
+
+**with fixture clone:**
+
+```ts
+import { genTempDir } from 'test-fns';
+
+describe('config parser', () => {
+  given('a directory with config files', () => {
+    const testDir = genTempDir({ clone: './src/__fixtures__/configs' });
+
+    when('config is loaded', () => {
+      then('it parses correctly', async () => {
+        const config = await loadConfig(testDir);
+        expect(config.configOption).toEqual('value');
+      });
+    });
+  });
+});
+```
+
+**cleanup behavior:**
+
+directories in `.tmp` are automatically pruned when:
+- they are older than 1 hour (based on timestamp prefix)
+- `genTempDir()` is called (prune runs in background)
+
+the `.tmp` directory includes a `readme.md` that explains the ttl policy.
+
+### isTempDir
+
+checks if a path is a test directory created by genTempDir.
+
+```ts
+import { isTempDir } from 'test-fns';
+
+isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.a1b2c3d4' }); // true
+isTempDir({ path: '/tmp/random' }); // false
+```
