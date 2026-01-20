@@ -7,6 +7,10 @@
 export { getError } from 'helpful-errors';
 
 // test utilities
+export {
+  genTempDir,
+  isTempDir,
+} from '@src/domain.operations/genTempDir/genTempDir';
 export { genTestUuid } from '@src/domain.operations/genTestUuid';
 export { bdd, given, then, when } from '@src/domain.operations/givenWhenThen';
 export {
