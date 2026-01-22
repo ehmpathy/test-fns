@@ -6,16 +6,20 @@ describe('isTempDir', () => {
     when('isTempDir is called', () => {
       then('it returns true for valid temp dir paths', () => {
         expect(
-          isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.a1b2c3d4' }),
+          isTempDir({
+            path: '/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4',
+          }),
         ).toBe(true);
 
         expect(
-          isTempDir({ path: '/any/path/2026-01-19T00-00-00.000Z.00000000' }),
+          isTempDir({
+            path: '/any/path/2026-01-19T00-00-00.000Z.some-slug.00000000',
+          }),
         ).toBe(true);
 
-        expect(isTempDir({ path: '2025-12-31T23-59-59.999Z.ffffffff' })).toBe(
-          true,
-        );
+        expect(
+          isTempDir({ path: '2025-12-31T23-59-59.999Z.test.ffffffff' }),
+        ).toBe(true);
       });
     });
   });
@@ -27,9 +31,9 @@ describe('isTempDir', () => {
         expect(isTempDir({ path: '/repo/.temp/invalid-dir' })).toBe(false);
         expect(isTempDir({ path: '' })).toBe(false);
         expect(isTempDir({ path: 'not-a-temp-dir' })).toBe(false);
-        expect(isTempDir({ path: '2026-01-19T12:34:56.789Z.a1b2c3d4' })).toBe(
-          false,
-        ); // colons instead of dashes
+        expect(
+          isTempDir({ path: '2026-01-19T12:34:56.789Z.test.a1b2c3d4' }),
+        ).toBe(false); // colons instead of dashes
       });
     });
   });

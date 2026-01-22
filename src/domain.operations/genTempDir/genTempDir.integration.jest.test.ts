@@ -21,17 +21,17 @@ describe('genTempDir', () => {
     createdDirs.length = 0;
   });
 
-  given('genTempDir is called with no options', () => {
+  given('genTempDir is called with a slug', () => {
     when('invoked', () => {
       then('it returns an absolute path to a new directory', () => {
-        const tempDir = genTempDir();
+        const tempDir = genTempDir({ slug: 'integration-test' });
         createdDirs.push(tempDir);
 
         expect(path.isAbsolute(tempDir)).toBe(true);
       });
 
       then('the directory exists on the filesystem', () => {
-        const tempDir = genTempDir();
+        const tempDir = genTempDir({ slug: 'integration-test' });
         createdDirs.push(tempDir);
 
         expect(fs.existsSync(tempDir)).toBe(true);
@@ -39,7 +39,7 @@ describe('genTempDir', () => {
       });
 
       then('the directory is empty', () => {
-        const tempDir = genTempDir();
+        const tempDir = genTempDir({ slug: 'integration-test' });
         createdDirs.push(tempDir);
 
         const contents = fs.readdirSync(tempDir);
@@ -47,10 +47,17 @@ describe('genTempDir', () => {
       });
 
       then('the directory path contains a timestamp prefix', () => {
-        const tempDir = genTempDir();
+        const tempDir = genTempDir({ slug: 'integration-test' });
         createdDirs.push(tempDir);
 
         expect(isTempDir({ path: tempDir })).toBe(true);
+      });
+
+      then('the directory path contains the slug', () => {
+        const tempDir = genTempDir({ slug: 'my-custom-slug' });
+        createdDirs.push(tempDir);
+
+        expect(path.basename(tempDir)).toContain('.my-custom-slug.');
       });
     });
   });
@@ -58,9 +65,9 @@ describe('genTempDir', () => {
   given('genTempDir is called multiple times in quick succession', () => {
     when('invoked', () => {
       then('each call returns a unique directory path', () => {
-        const dir1 = genTempDir();
-        const dir2 = genTempDir();
-        const dir3 = genTempDir();
+        const dir1 = genTempDir({ slug: 'multi-1' });
+        const dir2 = genTempDir({ slug: 'multi-2' });
+        const dir3 = genTempDir({ slug: 'multi-3' });
         createdDirs.push(dir1, dir2, dir3);
 
         expect(dir1).not.toEqual(dir2);
@@ -94,7 +101,7 @@ describe('genTempDir', () => {
       then(
         'the directory contains a copy of all files from the fixture',
         () => {
-          const tempDir = genTempDir({ clone: fixtureDir });
+          const tempDir = genTempDir({ slug: 'clone-test', clone: fixtureDir });
           createdDirs.push(tempDir);
 
           expect(fs.existsSync(path.join(tempDir, 'test.txt'))).toBe(true);
@@ -108,7 +115,7 @@ describe('genTempDir', () => {
       );
 
       then('the original fixture directory is unchanged', () => {
-        const tempDir = genTempDir({ clone: fixtureDir });
+        const tempDir = genTempDir({ slug: 'clone-test', clone: fixtureDir });
         createdDirs.push(tempDir);
 
         // modify the cloned file
@@ -124,7 +131,10 @@ describe('genTempDir', () => {
     when('fixture path does not exist', () => {
       then('it throws a clear error', () => {
         expect(() =>
-          genTempDir({ clone: '/non/existent/fixture/path' }),
+          genTempDir({
+            slug: 'clone-test',
+            clone: '/non/existent/fixture/path',
+          }),
         ).toThrow(/fixture path not found/i);
       });
     });

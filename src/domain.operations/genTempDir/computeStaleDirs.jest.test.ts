@@ -15,9 +15,9 @@ describe('computeStaleDirs', () => {
 
   given('directories with various ages', () => {
     const now = new Date('2026-01-19T14:00:00.000Z');
-    const twoHoursAgo = '2026-01-19T12-00-00.000Z.a1b2c3d4'; // stale
-    const thirtyMinsAgo = '2026-01-19T13-30-00.000Z.b2c3d4e5'; // recent
-    const fiveHoursAgo = '2026-01-19T09-00-00.000Z.c3d4e5f6'; // stale
+    const twoHoursAgo = '2026-01-19T12-00-00.000Z.stale-test.a1b2c3d4'; // stale
+    const thirtyMinsAgo = '2026-01-19T13-30-00.000Z.recent-test.b2c3d4e5'; // recent
+    const fiveHoursAgo = '2026-01-19T09-00-00.000Z.old-test.c3d4e5f6'; // stale
 
     const dirs: DirEntry[] = [
       { name: twoHoursAgo, path: `/tmp/.temp/${twoHoursAgo}` },
@@ -52,7 +52,7 @@ describe('computeStaleDirs', () => {
 
   given('directories with invalid timestamp formats', () => {
     const now = new Date('2026-01-19T14:00:00.000Z');
-    const validOld = '2026-01-19T10-00-00.000Z.a1b2c3d4';
+    const validOld = '2026-01-19T10-00-00.000Z.valid-test.a1b2c3d4';
     const invalidFormat = 'random-folder-name';
     const anotherInvalid = 'not-a-timestamp.12345678';
 
