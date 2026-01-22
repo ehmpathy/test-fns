@@ -8,17 +8,17 @@ import { pruneStaleOnce } from './pruneStale';
 
 /**
  * regex pattern that matches temp directory names
- * format: {isoTimestamp}.{8-char-hex-uuid}
+ * format: {isoTimestamp}.{slug}.{8-char-hex-uuid}
  */
 const TEMP_DIR_PATTERN =
-  /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{3}Z\.[a-f0-9]{8}$/i;
+  /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{3}Z\..+\.[a-f0-9]{8}$/i;
 
 /**
  * .what = checks if a path is a temp directory created by genTempDir
  * .why = enables validation and identification of temp directories
  *
  * @example
- * isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.a1b2c3d4' }); // true
+ * isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
  * isTempDir({ path: '/tmp/random' }); // false
  */
 export const isTempDir = (input: { path: string }): boolean => {
@@ -32,20 +32,21 @@ export const isTempDir = (input: { path: string }): boolean => {
  *
  * @example
  * // basic usage - empty dir
- * const dir = genTempDir();
- * // => /path/to/repo/.temp/2026-01-19T12-34-56.789Z.a1b2c3d4
+ * const dir = genTempDir({ slug: 'my-test' });
+ * // => /path/to/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4
  *
  * @example
  * // with fixture clone
- * const dir = genTempDir({ clone: './src/__fixtures__/example' });
+ * const dir = genTempDir({ slug: 'clone-test', clone: './src/__fixtures__/example' });
  * // => dir contains copy of fixture contents
  *
  * @note
- * - directories are auto-pruned after 1 hour
+ * - directories are auto-pruned after 7 days
  * - timestamp prefix enables age-based cleanup without stat calls
+ * - slug helps debuggers identify which test created the directory
  * - safe on macos and ubuntu without os-specific temp dir dependencies
  */
-export const genTempDir = (input?: { clone?: string }): string => {
+export const genTempDir = (input: { slug: string; clone?: string }): string => {
   // get git root
   const gitRoot = getGitRoot();
 
@@ -53,7 +54,7 @@ export const genTempDir = (input?: { clone?: string }): string => {
   const baseDir = ensureTempDir({ gitRoot });
 
   // compute unique directory name
-  const dirName = computeTempDirName();
+  const dirName = computeTempDirName({ slug: input.slug });
 
   // create the temp directory
   const tempDir = path.join(baseDir, dirName);

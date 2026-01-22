@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { computeStaleDirs, type DirEntry } from './computeStaleDirs';
 
-const ONE_HOUR_MS: number = 60 * 60 * 1000;
+const SEVEN_DAYS_MS: number = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * in-memory flag to ensure prune runs at most once per process
@@ -20,7 +20,7 @@ export const pruneStale = async (input: {
   tmpDir: string;
   maxAgeMs?: number;
 }): Promise<void> => {
-  const maxAgeMs = input.maxAgeMs ?? ONE_HOUR_MS;
+  const maxAgeMs = input.maxAgeMs ?? SEVEN_DAYS_MS;
 
   // list directories in tmpDir
   if (!fs.existsSync(input.tmpDir)) return;
@@ -52,6 +52,7 @@ export const pruneStale = async (input: {
  */
 export const pruneStaleOnce = async (input: {
   tmpDir: string;
+  maxAgeMs?: number;
 }): Promise<void> => {
   // skip if already pruned this process
   if (prunedThisProcess) return;
@@ -60,7 +61,7 @@ export const pruneStaleOnce = async (input: {
   prunedThisProcess = true;
 
   // fire-and-forget prune (don't block)
-  pruneStale({ tmpDir: input.tmpDir }).catch(() => {
+  pruneStale({ tmpDir: input.tmpDir, maxAgeMs: input.maxAgeMs }).catch(() => {
     // ignore errors - prune is best-effort
   });
 };

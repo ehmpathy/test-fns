@@ -32,7 +32,7 @@ describe('pruneStale', () => {
         const oldTimestamp = new Date(Date.now() - 2 * ONE_HOUR_MS)
           .toISOString()
           .replace(/:/g, '-');
-        const oldDir = `${oldTimestamp}.a1b2c3d4`;
+        const oldDir = `${oldTimestamp}.old-test.a1b2c3d4`;
         fs.mkdirSync(path.join(testTmpDir, oldDir));
         fs.writeFileSync(path.join(testTmpDir, oldDir, 'test.txt'), 'content');
 
@@ -40,7 +40,7 @@ describe('pruneStale', () => {
         const newTimestamp = new Date(Date.now() - 5 * 60 * 1000)
           .toISOString()
           .replace(/:/g, '-');
-        const newDir = `${newTimestamp}.b2c3d4e5`;
+        const newDir = `${newTimestamp}.new-test.b2c3d4e5`;
         fs.mkdirSync(path.join(testTmpDir, newDir));
 
         // run prune
@@ -101,11 +101,11 @@ describe('pruneStaleOnce', () => {
         const oldTimestamp = new Date(Date.now() - 2 * ONE_HOUR_MS)
           .toISOString()
           .replace(/:/g, '-');
-        const oldDir = `${oldTimestamp}.c3d4e5f6`;
+        const oldDir = `${oldTimestamp}.throttle-test.c3d4e5f6`;
         fs.mkdirSync(path.join(testTmpDir, oldDir));
 
-        // first call
-        await pruneStaleOnce({ tmpDir: testTmpDir });
+        // first call (with maxAgeMs to test pruning of 2-hour old dirs)
+        await pruneStaleOnce({ tmpDir: testTmpDir, maxAgeMs: ONE_HOUR_MS });
         expect(hasPrunedThisProcess()).toBe(true);
 
         // give the async prune time to complete
@@ -115,11 +115,11 @@ describe('pruneStaleOnce', () => {
         expect(fs.existsSync(path.join(testTmpDir, oldDir))).toBe(false);
 
         // create another old directory
-        const oldDir2 = `${oldTimestamp}.d4e5f6g7`;
+        const oldDir2 = `${oldTimestamp}.throttle-test.d4e5f6g7`;
         fs.mkdirSync(path.join(testTmpDir, oldDir2));
 
         // second call - should skip prune
-        await pruneStaleOnce({ tmpDir: testTmpDir });
+        await pruneStaleOnce({ tmpDir: testTmpDir, maxAgeMs: ONE_HOUR_MS });
 
         // give time for potential async operations
         await new Promise((resolve) => setTimeout(resolve, 50));
