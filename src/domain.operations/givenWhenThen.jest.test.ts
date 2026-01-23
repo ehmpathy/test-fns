@@ -85,4 +85,20 @@ describe('doesPlantNeedWater', () => {
       );
     });
   });
+  given('when.repeatably', () => {
+    when.repeatably({ attempts: 3 })('a repeated when block', ({ attempt }) => {
+      then('it should have access to the attempt counter', () => {
+        expect(attempt).toBeGreaterThan(0);
+        expect(attempt).toBeLessThanOrEqual(3);
+      });
+    });
+  });
+  given.repeatably({ attempts: 3 })('given.repeatably', ({ attempt }) => {
+    when('a repeated given block', () => {
+      then('it should have access to the attempt counter', () => {
+        expect(attempt).toBeGreaterThan(0);
+        expect(attempt).toBeLessThanOrEqual(3);
+      });
+    });
+  });
 });

@@ -51,6 +51,14 @@ interface Describe {
 
   /** Runs the tests inside this `describe` for the current file only if the condition is satisfied */
   runIf: (condition: boolean) => (desc: string, fn: () => void) => void;
+
+  /** Runs the describe block repeatedly to evaluate repeatability */
+  repeatably: (configuration: {
+    /**
+     * how many attempts to run the describe block, repeatedly
+     */
+    attempts: number;
+  }) => (desc: string, fn: (context: { attempt: number }) => void) => void;
 }
 interface Test {
   (...input: TestInput<void>): void;
@@ -114,6 +122,16 @@ given.skipIf =
   (desc: string, fn: () => void): void =>
     condition ? given.skip(desc, fn) : given(desc, fn);
 given.runIf = (condition: boolean) => given.skipIf(!condition);
+given.repeatably =
+  (configuration) =>
+  (desc: string, fn: (context: { attempt: number }) => void): void => {
+    for (const attempt of getNumberRange({
+      start: 1,
+      end: configuration.attempts,
+    })) {
+      given(`${desc}, attempt ${attempt}`, () => fn({ attempt }));
+    }
+  };
 
 /**
  * describe the event (action or trigger) that occurs within a scene
@@ -139,6 +157,16 @@ when.skipIf =
   (desc: string, fn: () => void): void =>
     condition ? when.skip(desc, fn) : when(desc, fn);
 when.runIf = (condition: boolean) => when.skipIf(!condition);
+when.repeatably =
+  (configuration) =>
+  (desc: string, fn: (context: { attempt: number }) => void): void => {
+    for (const attempt of getNumberRange({
+      start: 1,
+      end: configuration.attempts,
+    })) {
+      when(`${desc}, attempt ${attempt}`, () => fn({ attempt }));
+    }
+  };
 
 /**
  * assert the effect (expected outcome) that should be observed

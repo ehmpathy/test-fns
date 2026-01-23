@@ -133,7 +133,9 @@ describe('your test', () => {
 
 ### .repeatably(config)
 
-run a test multiple times to evaluate repeatability, with environment-aware criteria that prevent CI flakes yet enforce consistency locally
+run a block multiple times to evaluate repeatability. available on `given`, `when`, and `then`.
+
+**`then.repeatably`** — run a test multiple times with environment-aware criteria
 
 ```ts
 then.repeatably({
@@ -149,6 +151,35 @@ then.repeatably({
 - `criteria`:
   - `'EVERY'`: all attempts must pass (strict, for local development)
   - `'SOME'`: at least one attempt must pass (tolerant, for CI)
+
+**`when.repeatably`** — run the when block multiple times
+
+```ts
+given('a system under stress', () => {
+  when.repeatably({ attempts: 10 })('the operation is performed', ({ attempt }) => {
+    then('it should succeed', () => {
+      const result = performOperation();
+      expect(result.success).toBe(true);
+    });
+  });
+});
+```
+
+**`given.repeatably`** — run the given block multiple times
+
+```ts
+given.repeatably({ attempts: 3 })('different initial states', ({ attempt }) => {
+  const state = setupState(attempt);
+
+  when('the system processes the state', () => {
+    then('it should handle all variations', () => {
+      expect(process(state)).toBeDefined();
+    });
+  });
+});
+```
+
+all `repeatably` variants provide an `{ attempt }` parameter (starts at 1) to the callback.
 
 ## hooks
 
@@ -357,7 +388,8 @@ generates a temporary test directory within the repo's `.temp` folder, with auto
 **features:**
 - portable across os systems (no os-specific temp dir dependencies)
 - timestamp-prefixed names enable age-based cleanup
-- auto-prunes directories older than 1 hour
+- slug in directory name helps identify which test created it
+- auto-prunes directories older than 7 days
 - optional fixture clone for pre-populated test scenarios
 
 **basic usage:**
@@ -367,7 +399,7 @@ import { genTempDir } from 'test-fns';
 
 describe('file processor', () => {
   given('a test directory', () => {
-    const testDir = genTempDir();
+    const testDir = genTempDir({ slug: 'file-processor' });
 
     when('files are written', () => {
       then('they exist in the test directory', async () => {
@@ -386,7 +418,10 @@ import { genTempDir } from 'test-fns';
 
 describe('config parser', () => {
   given('a directory with config files', () => {
-    const testDir = genTempDir({ clone: './src/__fixtures__/configs' });
+    const testDir = genTempDir({
+      slug: 'config-parser',
+      clone: './src/__fixtures__/configs',
+    });
 
     when('config is loaded', () => {
       then('it parses correctly', async () => {
@@ -398,13 +433,22 @@ describe('config parser', () => {
 });
 ```
 
+**directory format:**
+
+```
+.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4/
+      └── {timestamp}.{slug}.{8-char-uuid}
+```
+
+the slug helps debuggers identify which test created a directory when they debug.
+
 **cleanup behavior:**
 
-directories in `.tmp` are automatically pruned when:
-- they are older than 1 hour (based on timestamp prefix)
+directories in `.temp` are automatically pruned when:
+- they are older than 7 days (based on timestamp prefix)
 - `genTempDir()` is called (prune runs in background)
 
-the `.tmp` directory includes a `readme.md` that explains the ttl policy.
+the `.temp` directory includes a `readme.md` that explains the ttl policy.
 
 ### isTempDir
 
@@ -413,6 +457,6 @@ checks if a path is a test directory created by genTempDir.
 ```ts
 import { isTempDir } from 'test-fns';
 
-isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.a1b2c3d4' }); // true
+isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
 isTempDir({ path: '/tmp/random' }); // false
 ```
