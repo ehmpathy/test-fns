@@ -28,9 +28,9 @@
   ],
   "scripts": {
     "commit:with-cli": "npx cz",
-    "fix:format:biome": "biome check --write",
+    "fix:format:biome": "biome check --write --diagnostic-level=error",
     "fix:format": "npm run fix:format:biome",
-    "fix:lint": "biome check --write",
+    "fix:lint": "biome check --write --diagnostic-level=error",
     "fix": "npm run fix:format && npm run fix:lint",
     "build:artifact": "echo 'no artifact'",
     "build:clean": "chmod -R u+w dist 2>/dev/null; rm -rf dist/",

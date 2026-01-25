@@ -155,11 +155,14 @@ then.repeatably({
 **`when.repeatably`** — run the when block multiple times
 
 ```ts
-given('a system under stress', () => {
-  when.repeatably({ attempts: 10 })('the operation is performed', ({ attempt }) => {
-    then('it should succeed', () => {
-      const result = performOperation();
-      expect(result.success).toBe(true);
+given('a probabilistic llm system', () => {
+  when.repeatably({
+    attempts: 3,
+    criteria: 'SOME', // pass if any attempt succeeds
+  })('the llm generates a response', ({ attempt }) => {
+    then('it should produce valid json', () => {
+      const result = generateResponse();
+      expect(() => JSON.parse(result)).not.toThrow();
     });
   });
 });
@@ -168,7 +171,10 @@ given('a system under stress', () => {
 **`given.repeatably`** — run the given block multiple times
 
 ```ts
-given.repeatably({ attempts: 3 })('different initial states', ({ attempt }) => {
+given.repeatably({
+  attempts: 3,
+  criteria: 'EVERY', // all attempts must pass (default)
+})('different initial states', ({ attempt }) => {
   const state = setupState(attempt);
 
   when('the system processes the state', () => {
@@ -179,7 +185,11 @@ given.repeatably({ attempts: 3 })('different initial states', ({ attempt }) => {
 });
 ```
 
-all `repeatably` variants provide an `{ attempt }` parameter (starts at 1) to the callback.
+all `repeatably` variants:
+- provide an `{ attempt }` parameter (starts at 1) to the callback
+- support `criteria: 'EVERY' | 'SOME'` (defaults to `'EVERY'`)
+  - `'EVERY'`: all attempts must pass
+  - `'SOME'`: at least one attempt must pass (useful for probabilistic tests)
 
 ## hooks
 
