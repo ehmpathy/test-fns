@@ -52,13 +52,40 @@ interface Describe {
   /** Runs the tests inside this `describe` for the current file only if the condition is satisfied */
   runIf: (condition: boolean) => (desc: string, fn: () => void) => void;
 
-  /** Runs the describe block repeatedly to evaluate repeatability */
+  /**
+   * runs the describe block repeatedly to evaluate repeatability
+   *
+   * note
+   * - uses `getAttempt()` function instead of direct `attempt` value
+   * - describe callbacks run once at test registration time (not per retry)
+   * - for SOME criteria, call `getAttempt()` inside test body to get retry count
+   * - for EVERY criteria, `getAttempt()` returns the attempt number for that block
+   *
+   * @example
+   * given.repeatably({ attempts: 3, criteria: 'EVERY' })('scene', ({ getAttempt }) => {
+   *   then('test', () => {
+   *     expect(getAttempt()).toBeLessThanOrEqual(3);
+   *   });
+   * });
+   */
   repeatably: (configuration: {
     /**
      * how many attempts to run the describe block, repeatedly
      */
     attempts: number;
-  }) => (desc: string, fn: (context: { attempt: number }) => void) => void;
+
+    /**
+     * the criteria for the whole describe suite
+     *
+     * note
+     * - EVERY = every attempt must pass for the suite to pass (default)
+     * - SOME = some attempt must pass for the suite to pass
+     */
+    criteria?: 'EVERY' | 'SOME';
+  }) => (
+    desc: string,
+    fn: (context: { getAttempt: () => number }) => void,
+  ) => void;
 }
 interface Test {
   (...input: TestInput<void>): void;
@@ -93,7 +120,9 @@ interface Test {
      * - SOME = some test must pass for the suite to pass
      */
     criteria: 'EVERY' | 'SOME';
-  }) => (...input: TestInput<{ attempt: number }>) => void;
+  }) => (
+    ...input: TestInput<{ attempt: number; getAttempt: () => number }>
+  ) => void;
 }
 
 /**
@@ -124,13 +153,72 @@ given.skipIf =
 given.runIf = (condition: boolean) => given.skipIf(!condition);
 given.repeatably =
   (configuration) =>
-  (desc: string, fn: (context: { attempt: number }) => void): void => {
-    for (const attempt of getNumberRange({
-      start: 1,
-      end: configuration.attempts,
-    })) {
-      given(`${desc}, attempt ${attempt}`, () => fn({ attempt }));
+  (desc: string, fn: (context: { getAttempt: () => number }) => void): void => {
+    const criteria = configuration.criteria ?? 'EVERY';
+
+    // EVERY: create N describe blocks, all must pass
+    if (criteria === 'EVERY') {
+      for (const attempt of getNumberRange({
+        start: 1,
+        end: configuration.attempts,
+      })) {
+        given(`${desc}, attempt ${attempt}`, () =>
+          fn({ getAttempt: () => attempt }),
+        );
+      }
+      return;
     }
+
+    // SOME: create one describe block, all tests inside will retry on failure
+    // note: beforeAll/afterAll do NOT re-run on retry (framework limitation)
+    // see: .agent/repo=.this/role=any/briefs/limitation.describe-block-retry-semantics.md
+    if (criteria === 'SOME') {
+      const runner = getTestRunner();
+      const describeFn = globals().describe;
+
+      // track attempts per test name (each test has its own retry counter)
+      const attemptsByTest: Record<string, number> = {};
+      const getAttempt = () => {
+        const testName = expect.getState().currentTestName ?? '';
+        return attemptsByTest[testName] ?? 0;
+      };
+
+      if (runner === 'jest') {
+        describeFn(`given: ${desc}`, () => {
+          jest.retryTimes(configuration.attempts, {
+            logErrorsBeforeRetry: true,
+          });
+          globals().beforeEach(() => {
+            const testName = expect.getState().currentTestName ?? '';
+            attemptsByTest[testName] = (attemptsByTest[testName] ?? 0) + 1;
+          });
+          fn({ getAttempt });
+        });
+      }
+
+      if (runner === 'vitest') {
+        // vitest supports { retry: N } as second arg to describe
+        (describeFn as any)(
+          `given: ${desc}`,
+          { retry: configuration.attempts },
+          () => {
+            globals().beforeEach(() => {
+              const testName =
+                (expect as any).getState?.().currentTestName ?? '';
+              attemptsByTest[testName] = (attemptsByTest[testName] ?? 0) + 1;
+            });
+            fn({ getAttempt });
+          },
+        );
+      }
+
+      return;
+    }
+
+    throw new UnexpectedCodePathError(
+      'configuration.criteria was neither EVERY nor SOME',
+      { configuration },
+    );
   };
 
 /**
@@ -159,13 +247,72 @@ when.skipIf =
 when.runIf = (condition: boolean) => when.skipIf(!condition);
 when.repeatably =
   (configuration) =>
-  (desc: string, fn: (context: { attempt: number }) => void): void => {
-    for (const attempt of getNumberRange({
-      start: 1,
-      end: configuration.attempts,
-    })) {
-      when(`${desc}, attempt ${attempt}`, () => fn({ attempt }));
+  (desc: string, fn: (context: { getAttempt: () => number }) => void): void => {
+    const criteria = configuration.criteria ?? 'EVERY';
+
+    // EVERY: create N describe blocks, all must pass
+    if (criteria === 'EVERY') {
+      for (const attempt of getNumberRange({
+        start: 1,
+        end: configuration.attempts,
+      })) {
+        when(`${desc}, attempt ${attempt}`, () =>
+          fn({ getAttempt: () => attempt }),
+        );
+      }
+      return;
     }
+
+    // SOME: create one describe block, all tests inside will retry on failure
+    // note: beforeAll/afterAll do NOT re-run on retry (framework limitation)
+    // see: .agent/repo=.this/role=any/briefs/limitation.describe-block-retry-semantics.md
+    if (criteria === 'SOME') {
+      const runner = getTestRunner();
+      const describeFn = globals().describe;
+
+      // track attempts per test name (each test has its own retry counter)
+      const attemptsByTest: Record<string, number> = {};
+      const getAttempt = () => {
+        const testName = expect.getState().currentTestName ?? '';
+        return attemptsByTest[testName] ?? 0;
+      };
+
+      if (runner === 'jest') {
+        describeFn(`when: ${desc}`, () => {
+          jest.retryTimes(configuration.attempts, {
+            logErrorsBeforeRetry: true,
+          });
+          globals().beforeEach(() => {
+            const testName = expect.getState().currentTestName ?? '';
+            attemptsByTest[testName] = (attemptsByTest[testName] ?? 0) + 1;
+          });
+          fn({ getAttempt });
+        });
+      }
+
+      if (runner === 'vitest') {
+        // vitest supports { retry: N } as second arg to describe
+        (describeFn as any)(
+          `when: ${desc}`,
+          { retry: configuration.attempts },
+          () => {
+            globals().beforeEach(() => {
+              const testName =
+                (expect as any).getState?.().currentTestName ?? '';
+              attemptsByTest[testName] = (attemptsByTest[testName] ?? 0) + 1;
+            });
+            fn({ getAttempt });
+          },
+        );
+      }
+
+      return;
+    }
+
+    throw new UnexpectedCodePathError(
+      'configuration.criteria was neither EVERY nor SOME',
+      { configuration },
+    );
   };
 
 /**
@@ -195,7 +342,9 @@ then.skipIf =
 then.runIf = (condition: boolean) => then.skipIf(!condition);
 then.repeatably =
   (configuration) =>
-  (...input: TestInput<{ attempt: number }>): void => {
+  (
+    ...input: TestInput<{ attempt: number; getAttempt: () => number }>
+  ): void => {
     if (input.length !== 2 && input.length !== 3)
       throw new UnexpectedCodePathError('unsupported input length', { input });
 
@@ -204,11 +353,12 @@ then.repeatably =
       const testFn = globals().test;
       let attempt = 0;
       globals().beforeEach(() => attempt++);
+      const getAttempt = () => attempt;
       const [name, fn] = castToTestInput({
         input:
           input.length === 2
-            ? [input[0], () => input[1]({ attempt })]
-            : [input[0], input[1], () => input[2]({ attempt })],
+            ? [input[0], () => input[1]({ attempt, getAttempt })]
+            : [input[0], input[1], () => input[2]({ attempt, getAttempt })],
         prefix: 'then',
       });
       if (runner === 'jest') {
@@ -226,11 +376,14 @@ then.repeatably =
         start: 1,
         end: configuration.attempts,
       })) {
+        const getAttempt = () => attempt;
         if (input.length === 2)
-          then(input[0] + `, attempt ${attempt}`, () => input[1]({ attempt }));
+          then(input[0] + `, attempt ${attempt}`, () =>
+            input[1]({ attempt, getAttempt }),
+          );
         if (input.length === 3)
           then(input[0] + `, attempt ${attempt}`, input[1], () =>
-            input[2]({ attempt }),
+            input[2]({ attempt, getAttempt }),
           );
       }
       return;

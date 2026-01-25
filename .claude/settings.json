@@ -69,13 +69,11 @@
     ],
     "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm run --if-present fix",
-            "timeout": 30,
-            "author": "repo=ehmpathy/role=mechanic"
+            "command": "echo 'STOP HOOK FIRED' && pnpm run --silent --if-present fix >/dev/null",
+            "timeout": 30
           }
         ]
       }

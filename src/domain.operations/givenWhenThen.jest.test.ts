@@ -85,20 +85,79 @@ describe('doesPlantNeedWater', () => {
       );
     });
   });
-  given('when.repeatably', () => {
-    when.repeatably({ attempts: 3 })('a repeated when block', ({ attempt }) => {
-      then('it should have access to the attempt counter', () => {
-        expect(attempt).toBeGreaterThan(0);
-        expect(attempt).toBeLessThanOrEqual(3);
-      });
+  describe('when.repeatably', () => {
+    given('criteria = EVERY (default)', () => {
+      when.repeatably({ attempts: 3 })(
+        'a repeated when block',
+        ({ getAttempt }) => {
+          then('it should have access to the attempt counter', () => {
+            expect(getAttempt()).toBeGreaterThan(0);
+            expect(getAttempt()).toBeLessThanOrEqual(3);
+          });
+        },
+      );
+    });
+
+    given('criteria = EVERY (explicit)', () => {
+      when.repeatably({ attempts: 3, criteria: 'EVERY' })(
+        'a repeated when block',
+        ({ getAttempt }) => {
+          then('it should have access to the attempt counter', () => {
+            expect(getAttempt()).toBeGreaterThan(0);
+            expect(getAttempt()).toBeLessThanOrEqual(3);
+          });
+        },
+      );
+    });
+
+    given('criteria = SOME', () => {
+      when.repeatably({ attempts: 5, criteria: 'SOME' })(
+        'a block where tests retry on failure',
+        ({ getAttempt }) => {
+          then('tests inside retry until success', () => {
+            // fail on first 2 attempts, succeed on 3rd
+            expect(getAttempt()).toBeGreaterThanOrEqual(3);
+          });
+        },
+      );
     });
   });
-  given.repeatably({ attempts: 3 })('given.repeatably', ({ attempt }) => {
-    when('a repeated given block', () => {
-      then('it should have access to the attempt counter', () => {
-        expect(attempt).toBeGreaterThan(0);
-        expect(attempt).toBeLessThanOrEqual(3);
-      });
-    });
+
+  describe('given.repeatably', () => {
+    given.repeatably({ attempts: 3 })(
+      'criteria = EVERY (default)',
+      ({ getAttempt }) => {
+        when('a repeated given block', () => {
+          then('it should have access to the attempt counter', () => {
+            expect(getAttempt()).toBeGreaterThan(0);
+            expect(getAttempt()).toBeLessThanOrEqual(3);
+          });
+        });
+      },
+    );
+
+    given.repeatably({ attempts: 3, criteria: 'EVERY' })(
+      'criteria = EVERY (explicit)',
+      ({ getAttempt }) => {
+        when('a repeated given block', () => {
+          then('it should have access to the attempt counter', () => {
+            expect(getAttempt()).toBeGreaterThan(0);
+            expect(getAttempt()).toBeLessThanOrEqual(3);
+          });
+        });
+      },
+    );
+
+    given.repeatably({ attempts: 5, criteria: 'SOME' })(
+      'criteria = SOME',
+      ({ getAttempt }) => {
+        when('tests inside retry on failure', () => {
+          then('tests inside retry until success', () => {
+            // fail on first 2 attempts, succeed on 3rd
+            expect(getAttempt()).toBeGreaterThanOrEqual(3);
+          });
+        });
+      },
+    );
   });
 });
