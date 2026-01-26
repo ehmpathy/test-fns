@@ -139,4 +139,138 @@ describe('genTempDir', () => {
       });
     });
   });
+
+  given('genTempDir is called with symlink option', () => {
+    when('symlink targets exist in repo root', () => {
+      then('symlink to file is created and readable', () => {
+        const tempDir = genTempDir({
+          slug: 'symlink-file-test',
+          symlink: [{ at: 'my-package.json', to: 'package.json' }],
+        });
+        createdDirs.push(tempDir);
+
+        const symlinkPath = path.join(tempDir, 'my-package.json');
+        expect(fs.existsSync(symlinkPath)).toBe(true);
+        expect(fs.lstatSync(symlinkPath).isSymbolicLink()).toBe(true);
+
+        // verify content is readable via symlink
+        const content = fs.readFileSync(symlinkPath, 'utf-8');
+        expect(content).toContain('"name":');
+      });
+
+      then('symlink to directory is created and accessible', () => {
+        const tempDir = genTempDir({
+          slug: 'symlink-dir-test',
+          symlink: [{ at: 'linked-src', to: 'src' }],
+        });
+        createdDirs.push(tempDir);
+
+        const symlinkPath = path.join(tempDir, 'linked-src');
+        expect(fs.existsSync(symlinkPath)).toBe(true);
+        expect(fs.lstatSync(symlinkPath).isSymbolicLink()).toBe(true);
+
+        // verify directory contents are accessible
+        const contents = fs.readdirSync(symlinkPath);
+        expect(contents.length).toBeGreaterThan(0);
+      });
+    });
+
+    when('symlink `at` path includes nested directories', () => {
+      then('parent directories are created automatically', () => {
+        const tempDir = genTempDir({
+          slug: 'symlink-nested-test',
+          symlink: [{ at: 'deep/nested/path/config.json', to: 'package.json' }],
+        });
+        createdDirs.push(tempDir);
+
+        expect(fs.existsSync(path.join(tempDir, 'deep/nested/path'))).toBe(
+          true,
+        );
+        expect(
+          fs.existsSync(path.join(tempDir, 'deep/nested/path/config.json')),
+        ).toBe(true);
+      });
+    });
+
+    when('symlink target does not exist', () => {
+      then('it throws a clear error', () => {
+        expect(() =>
+          genTempDir({
+            slug: 'symlink-error-test',
+            symlink: [{ at: 'link.txt', to: 'nonexistent-file.txt' }],
+          }),
+        ).toThrow(/symlink target not found/i);
+      });
+    });
+
+    when('multiple symlinks are specified', () => {
+      then('all symlinks are created', () => {
+        const tempDir = genTempDir({
+          slug: 'symlink-multi-test',
+          symlink: [
+            { at: 'pkg.json', to: 'package.json' },
+            { at: 'ts-config.json', to: 'tsconfig.json' },
+            { at: 'nested/readme.md', to: 'readme.md' },
+          ],
+        });
+        createdDirs.push(tempDir);
+
+        expect(fs.existsSync(path.join(tempDir, 'pkg.json'))).toBe(true);
+        expect(fs.existsSync(path.join(tempDir, 'ts-config.json'))).toBe(true);
+        expect(fs.existsSync(path.join(tempDir, 'nested/readme.md'))).toBe(
+          true,
+        );
+      });
+    });
+  });
+
+  given('genTempDir is called with both clone and symlink options', () => {
+    const fixtureDir = path.join(__dirname, '.test-fixture-symlink');
+
+    beforeEach(() => {
+      fs.mkdirSync(fixtureDir, { recursive: true });
+      fs.writeFileSync(path.join(fixtureDir, 'cloned.txt'), 'cloned content');
+    });
+
+    afterEach(() => {
+      if (fs.existsSync(fixtureDir)) {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
+    });
+
+    when('both clone and symlink are specified', () => {
+      then('cloned files and symlinks coexist', () => {
+        const tempDir = genTempDir({
+          slug: 'clone-and-symlink-test',
+          clone: fixtureDir,
+          symlink: [{ at: 'linked-pkg.json', to: 'package.json' }],
+        });
+        createdDirs.push(tempDir);
+
+        // cloned file exists
+        expect(fs.existsSync(path.join(tempDir, 'cloned.txt'))).toBe(true);
+        expect(
+          fs.readFileSync(path.join(tempDir, 'cloned.txt'), 'utf-8'),
+        ).toEqual('cloned content');
+
+        // symlink exists
+        expect(fs.existsSync(path.join(tempDir, 'linked-pkg.json'))).toBe(true);
+        expect(
+          fs.lstatSync(path.join(tempDir, 'linked-pkg.json')).isSymbolicLink(),
+        ).toBe(true);
+      });
+    });
+
+    when('symlink path collides with cloned file', () => {
+      then('it throws a clear error', () => {
+        expect(() =>
+          genTempDir({
+            slug: 'collision-test',
+            clone: fixtureDir,
+            symlink: [{ at: 'cloned.txt', to: 'package.json' }],
+          }),
+        ).toThrow(/symlink path collides with prior content/i);
+      });
+    });
+  });
 });

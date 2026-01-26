@@ -443,6 +443,41 @@ describe('config parser', () => {
 });
 ```
 
+**with symlinks to repo root:**
+
+```ts
+import { genTempDir } from 'test-fns';
+
+describe('package installer', () => {
+  given('a temp directory with symlinks to repo artifacts', () => {
+    const testDir = genTempDir({
+      slug: 'installer-test',
+      symlink: [
+        { at: 'node_modules', to: 'node_modules' },
+        { at: 'config/tsconfig.json', to: 'tsconfig.json' },
+      ],
+    });
+
+    when('the installer runs', () => {
+      then('it can access linked dependencies', async () => {
+        const nodeModules = path.join(testDir, 'node_modules');
+        expect(await fs.stat(nodeModules)).toBeDefined();
+      });
+    });
+  });
+});
+```
+
+symlink options:
+- `at` = relative path within the temp dir (where symlink is created)
+- `to` = relative path within the repo root (what symlink points to)
+
+notes:
+- symlinks are created after clone (if both specified)
+- parent directories are created automatically for nested `at` paths
+- throws `BadRequestError` if target does not exist
+- throws `BadRequestError` if symlink path collides with cloned content
+
 **directory format:**
 
 ```
