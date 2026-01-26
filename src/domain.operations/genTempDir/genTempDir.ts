@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { cloneFixture } from '../../infra/isomorph.fs/cloneFixture';
+import { createSymlinks } from '../../infra/isomorph.fs/createSymlinks';
 import { ensureTempDir } from '../../infra/isomorph.fs/ensureTempDir';
 import { getGitRoot } from '../../infra/isomorph.fs/getGitRoot';
 import { computeTempDirName } from './computeTempDirName';
@@ -40,13 +41,28 @@ export const isTempDir = (input: { path: string }): boolean => {
  * const dir = genTempDir({ slug: 'clone-test', clone: './src/__fixtures__/example' });
  * // => dir contains copy of fixture contents
  *
+ * @example
+ * // with symlinks to repo root
+ * const dir = genTempDir({
+ *   slug: 'symlink-test',
+ *   symlink: [
+ *     { at: 'config/settings.json', to: 'src/config/defaults.json' },
+ *     { at: 'node_modules', to: 'node_modules' },
+ *   ],
+ * });
+ * // => dir contains symlinks that reference repo root paths
+ *
  * @note
  * - directories are auto-pruned after 7 days
  * - timestamp prefix enables age-based cleanup without stat calls
  * - slug helps debuggers identify which test created the directory
  * - safe on macos and ubuntu without os-specific temp dir dependencies
  */
-export const genTempDir = (input: { slug: string; clone?: string }): string => {
+export const genTempDir = (input: {
+  slug: string;
+  clone?: string;
+  symlink?: Array<{ at: string; to: string }>;
+}): string => {
   // get git root
   const gitRoot = getGitRoot();
 
@@ -68,6 +84,15 @@ export const genTempDir = (input: { slug: string; clone?: string }): string => {
     // resolve clone path relative to cwd
     const clonePath = path.resolve(process.cwd(), input.clone);
     cloneFixture({ from: clonePath, to: tempDir });
+  }
+
+  // create symlinks if requested (after clone, so symlinks can augment cloned content)
+  if (input?.symlink && input.symlink.length > 0) {
+    createSymlinks({
+      symlinks: input.symlink,
+      tempDir,
+      gitRoot,
+    });
   }
 
   return tempDir;
