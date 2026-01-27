@@ -230,4 +230,118 @@ describe('genTempDir acceptance', () => {
       },
     );
   });
+
+  // usecase.2: isolation from gitroot module resolution
+  given('[case5] a temp directory created by genTempDir', () => {
+    when('[t0] we check physical location', () => {
+      then(
+        'physical files are stored at /tmp/test-fns/{repo-dirname}/.temp/',
+        () => {
+          const dir = genTempDir({ slug: 'isolation-test' });
+          createdDirs.push(dir);
+
+          // the returned path is the symlink path
+          expect(dir).toContain('.temp/genTempDir.symlink/');
+
+          // resolve symlink to get physical path
+          const physicalPath = fs.realpathSync(dir);
+          expect(physicalPath).toMatch(/^\/tmp\/test-fns\//);
+          expect(physicalPath).toContain('/.temp/');
+        },
+      );
+    });
+
+    when(
+      '[t1] we search upward for node_modules from within the temp dir',
+      () => {
+        then('no node_modules is found in any ancestor directory', () => {
+          const dir = genTempDir({ slug: 'nodemodules-test' });
+          createdDirs.push(dir);
+
+          // resolve to physical path and search upward
+          const physicalPath = fs.realpathSync(dir);
+
+          // walk up from physical path, stop at /tmp
+          let currentDir = physicalPath;
+          while (currentDir !== '/tmp' && currentDir !== '/') {
+            const nodeModulesPath = path.join(currentDir, 'node_modules');
+            const hasNodeModules = fs.existsSync(nodeModulesPath);
+            expect(hasNodeModules).toBe(false);
+            currentDir = path.dirname(currentDir);
+          }
+        });
+      },
+    );
+
+    when(
+      '[t2] we search upward for package.json from within the temp dir',
+      () => {
+        then('no package.json is found in any ancestor directory', () => {
+          const dir = genTempDir({ slug: 'packagejson-test' });
+          createdDirs.push(dir);
+
+          // resolve to physical path and search upward
+          const physicalPath = fs.realpathSync(dir);
+
+          // walk up from physical path, stop at /tmp
+          let currentDir = physicalPath;
+          while (currentDir !== '/tmp' && currentDir !== '/') {
+            const packageJsonPath = path.join(currentDir, 'package.json');
+            const hasPackageJson = fs.existsSync(packageJsonPath);
+            expect(hasPackageJson).toBe(false);
+            currentDir = path.dirname(currentDir);
+          }
+        });
+      },
+    );
+  });
+
+  // usecase.3: discoverability via symlink at gitroot
+  given('[case6] symlink at gitroot', () => {
+    when('[t0] we check @gitroot/.temp/genTempDir.symlink/', () => {
+      then('it is a symlink', () => {
+        const dir = genTempDir({ slug: 'symlink-check' });
+        createdDirs.push(dir);
+
+        // extract symlink parent from returned path
+        const symlinkDir = path.dirname(dir);
+        expect(fs.lstatSync(symlinkDir).isSymbolicLink()).toBe(true);
+      });
+
+      then('symlink target is within /tmp/', () => {
+        const dir = genTempDir({ slug: 'symlink-target' });
+        createdDirs.push(dir);
+
+        const symlinkDir = path.dirname(dir);
+        const target = fs.readlinkSync(symlinkDir);
+        expect(target).toMatch(/^\/tmp\//);
+      });
+    });
+
+    when('[t1] we list contents via symlink', () => {
+      then('temp directories are visible', () => {
+        const dir = genTempDir({ slug: 'visible-via-symlink' });
+        createdDirs.push(dir);
+
+        const symlinkDir = path.dirname(dir);
+        const dirName = path.basename(dir);
+
+        // list via symlink path (not physical)
+        const contents = fs.readdirSync(symlinkDir);
+        expect(contents).toContain(dirName);
+      });
+    });
+  });
+
+  // boundary.1: /tmp/ validation
+  // note: cannot test /tmp/ absence in acceptance test (would require root to remove)
+  // this is verified in genIsolatedTempInfra integration tests
+  given('[case7] /tmp/ exists on the system', () => {
+    when('[t0] we verify /tmp/ requirement', () => {
+      then('/tmp/ directory exists (unix system requirement)', () => {
+        expect(fs.existsSync('/tmp')).toBe(true);
+        expect(fs.statSync('/tmp').isDirectory()).toBe(true);
+      });
+    });
+  });
 });
