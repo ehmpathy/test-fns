@@ -2,6 +2,11 @@ import { UnexpectedCodePathError } from 'helpful-errors';
 
 import { globals } from '@src/infra/isomorph.test/getTestGlobals';
 
+import {
+  findRepeatableContext,
+  getDescribePath,
+} from './registryDescribeRepeatable';
+
 /**
  * .what = declare a resource to be prepared before tests
  * .why = simplifies devexp via `const thing = usePrep(...)` syntax
@@ -39,10 +44,22 @@ export const usePrep = <T extends Record<string, any>>(
     },
   };
 
+  // capture path at registration time (synchronous)
+  const path = getDescribePath();
+
   const register =
     options.mode === 'beforeEach' ? globals().beforeEach : globals().beforeAll;
 
   register(async () => {
+    // lookup context by path hierarchy (explicit, not implicit global)
+    const ctx = findRepeatableContext(path);
+
+    // skip if prior attempt succeeded
+    if (ctx?.anyAttemptPassed) {
+      console.log(`    🫧  [SKIPPED] prior attempt passed (setup)`);
+      return;
+    }
+
     toolbox = await setup();
 
     // assign properties from toolbox to drawer so Object.keys(), for..in, etc work

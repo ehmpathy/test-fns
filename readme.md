@@ -191,6 +191,55 @@ all `repeatably` variants:
   - `'EVERY'`: all attempts must pass
   - `'SOME'`: at least one attempt must pass (useful for probabilistic tests)
 
+**full block retry with `criteria: 'SOME'`**
+
+when `given.repeatably` or `when.repeatably` uses `criteria: 'SOME'`, the entire block is retried when any `then` block fails:
+
+```ts
+when.repeatably({
+  attempts: 3,
+  criteria: 'SOME',
+})('llm generates valid output', ({ attempt }) => {
+  // if thenB fails, BOTH thenA and thenB will run again on the next attempt
+  then('thenA: output is not empty', () => {
+    expect(result.output.length).toBeGreaterThan(0);
+  });
+
+  then('thenB: output is valid json', () => {
+    expect(() => JSON.parse(result.output)).not.toThrow();
+  });
+});
+```
+
+this enables reliable tests for probabilistic systems where multiple assertions must pass together. if attempt 1 fails on `thenB`, attempt 2 will re-run both `thenA` and `thenB` from scratch.
+
+**skip-on-success behavior**
+
+once any attempt passes (all `then` blocks succeed), subsequent attempts are skipped entirely:
+- all `then` blocks are skipped
+- `useBeforeAll` and `useAfterAll` callbacks are skipped
+- expensive setup operations do not execute
+
+**recommended pattern for ci/cd**
+
+for reliable ci/cd with probabilistic tests (like llm-powered systems), use environment-aware criteria:
+
+```ts
+const criteria = process.env.CI ? 'SOME' : 'EVERY';
+
+when.repeatably({ attempts: 3, criteria })('llm generates response', ({ attempt }) => {
+  then('response is valid', () => {
+    // strict at devtime (EVERY): all 3 attempts must pass
+    // tolerant at cicdtime (SOME): at least 1 attempt must pass
+    expect(response).toMatchSnapshot();
+  });
+});
+```
+
+this pattern provides:
+- **strict validation at devtime** — `'EVERY'` ensures consistent behavior across all attempts
+- **reliable ci/cd pipelines** — `'SOME'` tolerates occasional probabilistic failures while still able to catch systematic issues
+
 ## hooks
 
 similar to the sync-render constraints that drove react to leverage hooks, we leverage hooks in tests due to those same constraints. test frameworks collect test definitions synchronously, then execute them later. hooks let immutable references to data be declared before the data is rendered via execution — which enables `const` declarations instead of `let` mutations.

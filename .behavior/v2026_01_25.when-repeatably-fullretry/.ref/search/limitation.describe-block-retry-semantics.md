@@ -437,6 +437,70 @@ the function-based api prevents accidental misuse:
 - merges junit output from multiple runs
 - works but adds complexity outside jest
 
+**option 4: custom environment with dynamic skip (serial within describe)**
+
+jest-circus allows custom environments to intercept test events. while you can't re-execute tests, you can **skip tests that remain** when one fails — this replicates half of Playwright's `describe.serial` behavior.
+
+```ts
+// CustomSerialEnvironment.ts
+const NodeEnvironment = require('jest-environment-node');
+
+class CustomSerialEnvironment extends NodeEnvironment {
+  failedInDescribe = new Set();
+
+  async handleTestEvent(event) {
+    if (event.name === 'test_fn_failure') {
+      // mark this describe as failed
+      const describeName = event.test.parent?.name;
+      if (describeName) this.failedInDescribe.add(describeName);
+    }
+
+    if (event.name === 'test_start') {
+      // skip if a prior test in this describe failed
+      const describeName = event.test.parent?.name;
+      if (describeName && this.failedInDescribe.has(describeName)) {
+        // unsupported but functional pattern
+        event.test.mode = 'skip';
+      }
+    }
+  }
+}
+```
+
+- source: [dynamically skip tests within jest](https://blog.scottlogic.com/2023/09/19/dynamically-skipping-tests-within-jest.html)
+- related issue: [jestjs/jest#8387](https://github.com/jestjs/jest/issues/8387)
+- package: [@sbnc/jest-skip](https://www.npmjs.com/package/@sbnc/jest-skip)
+
+**limitations of dynamic skip approach**:
+- only skips tests that follow — does not retry the suite
+- `event.test.mode = 'skip'` is unsupported (may break in future jest versions)
+- requires custom test environment configuration
+
+**option 5: combine jest-retry-all-hooks + dynamic skip**
+
+for suite-level retry with serial semantics:
+
+1. use `jest-retry-all-hooks` to make `beforeAll` re-run on retries
+2. use custom environment to skip tests that follow a failure
+3. use `jest.retryTimes()` to retry the failed test
+
+```ts
+// this gets closest to Playwright's describe.serial behavior
+describe('serial suite', () => {
+  jest.retryTimes(3);
+
+  beforeAll(() => {
+    // re-runs on each retry thanks to jest-retry-all-hooks
+    setupResources();
+  });
+
+  test('step 1', () => { /* if fails, retries; if still fails, skip step 2 */ });
+  test('step 2', () => { /* skipped if step 1 exhausted retries */ });
+});
+```
+
+**gap that remains**: tests that passed before another test failed don't re-run. only the failed test retries. this is fundamentally different from Playwright's "all-or-none" suite retry.
+
 ### vitest
 
 **current state**: no native suite-level retry. retry only affects individual tests.
@@ -562,10 +626,13 @@ this would require:
 - [jest.retryTimes documentation](https://jestjs.io/docs/jest-object)
 - [jest suite-level retry feature request #10520](https://github.com/jestjs/jest/issues/10520)
 - [jest retry entire suite #11309](https://github.com/jestjs/jest/issues/11309)
+- [jest skip rest of tests in describe on failure #8387](https://github.com/jestjs/jest/issues/8387)
 - [jest-retry-all-hooks package](https://github.com/wix-incubator/jest-retry-all-hooks)
 - [jest-retry package (file-level)](https://github.com/bZichett/jest-retry)
+- [@sbnc/jest-skip package](https://www.npmjs.com/package/@sbnc/jest-skip)
 - [jest 30 blog post](https://jestjs.io/blog/2025/06/04/jest-30)
-- [wealthfront: retrying e2e suites with jest](https://eng.wealthfront.com/2022/04/21/retrying-e2e-test-suites-with-jest/)
+- [wealthfront: retry e2e suites with jest](https://eng.wealthfront.com/2022/04/21/retrying-e2e-test-suites-with-jest/)
+- [dynamically skip tests within jest](https://blog.scottlogic.com/2023/09/19/dynamically-skipping-tests-within-jest.html)
 
 ### vitest
 - [vitest test api reference](https://vitest.dev/api/)
