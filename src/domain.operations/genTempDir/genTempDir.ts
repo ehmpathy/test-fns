@@ -1,10 +1,7 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { cloneFixture } from '../../infra/isomorph.fs/cloneFixture';
-import { createSymlinks } from '../../infra/isomorph.fs/createSymlinks';
-import { ensureTempDir } from '../../infra/isomorph.fs/ensureTempDir';
+import { genIsolatedTempInfra } from '../../infra/isomorph.fs/genIsolatedTempInfra';
 import { getGitRoot } from '../../infra/isomorph.fs/getGitRoot';
-import { computeTempDirName } from './computeTempDirName';
+import { genEphemeralTempDir } from './genEphemeralTempDir';
 import { pruneStaleOnce } from './pruneStale';
 
 /**
@@ -19,7 +16,8 @@ const TEMP_DIR_PATTERN =
  * .why = enables validation and identification of temp directories
  *
  * @example
- * isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
+ * isTempDir({ path: '/repo/.temp/genTempDir.symlink/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
+ * isTempDir({ path: '/tmp/test-fns/my-repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
  * isTempDir({ path: '/tmp/random' }); // false
  */
 export const isTempDir = (input: { path: string }): boolean => {
@@ -28,13 +26,16 @@ export const isTempDir = (input: { path: string }): boolean => {
 };
 
 /**
- * .what = generates a temporary directory within the repo's .temp folder
+ * .what = generates a temporary directory isolated from gitroot module resolution
  * .why = provides portable temp directory creation with automatic cleanup
+ *
+ * @returns the link path (within @gitroot/.temp/genTempDir.symlink/) for observability
  *
  * @example
  * // basic usage - empty dir
  * const dir = genTempDir({ slug: 'my-test' });
- * // => /path/to/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4
+ * // => /path/to/repo/.temp/genTempDir.symlink/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4
+ * // (physical files at /tmp/test-fns/{repo}/.temp/...)
  *
  * @example
  * // with fixture clone
@@ -53,10 +54,11 @@ export const isTempDir = (input: { path: string }): boolean => {
  * // => dir contains symlinks that reference repo root paths
  *
  * @note
+ * - physical files stored at /tmp/test-fns/{repo}/.temp/ (isolated from node_modules)
+ * - symlink at @gitroot/.temp/genTempDir.symlink/ for discoverability
  * - directories are auto-pruned after 7 days
  * - timestamp prefix enables age-based cleanup without stat calls
  * - slug helps debuggers identify which test created the directory
- * - safe on macos and ubuntu without os-specific temp dir dependencies
  */
 export const genTempDir = (input: {
   slug: string;
@@ -66,34 +68,21 @@ export const genTempDir = (input: {
   // get git root
   const gitRoot = getGitRoot();
 
-  // ensure .temp directory exists
-  const baseDir = ensureTempDir({ gitRoot });
-
-  // compute unique directory name
-  const dirName = computeTempDirName({ slug: input.slug });
-
-  // create the temp directory
-  const tempDir = path.join(baseDir, dirName);
-  fs.mkdirSync(tempDir, { recursive: true });
+  // ensure isolated temp infrastructure exists
+  const tempInfra = genIsolatedTempInfra({ gitRoot });
 
   // trigger background prune (max once per process)
-  void pruneStaleOnce({ tmpDir: baseDir });
+  void pruneStaleOnce({ tmpDir: tempInfra.pathPhysical });
 
-  // clone fixture if requested
-  if (input?.clone) {
-    // resolve clone path relative to cwd
-    const clonePath = path.resolve(process.cwd(), input.clone);
-    cloneFixture({ from: clonePath, to: tempDir });
-  }
+  // create ephemeral temp directory
+  const dirName = genEphemeralTempDir({
+    slug: input.slug,
+    clone: input.clone,
+    symlink: input.symlink,
+    tempInfra: { pathPhysical: tempInfra.pathPhysical },
+    gitRoot,
+  });
 
-  // create symlinks if requested (after clone, so symlinks can augment cloned content)
-  if (input?.symlink && input.symlink.length > 0) {
-    createSymlinks({
-      symlinks: input.symlink,
-      tempDir,
-      gitRoot,
-    });
-  }
-
-  return tempDir;
+  // return link path for observability
+  return path.join(tempInfra.pathSymlink, dirName);
 };

@@ -17,6 +17,13 @@ describe('isTempDir', () => {
           }),
         ).toBe(true);
 
+        // physical /tmp/ path also works
+        expect(
+          isTempDir({
+            path: '/tmp/test-fns/my-repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4',
+          }),
+        ).toBe(true);
+
         expect(
           isTempDir({ path: '2025-12-31T23-59-59.999Z.test.ffffffff' }),
         ).toBe(true);
