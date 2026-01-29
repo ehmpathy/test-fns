@@ -289,9 +289,104 @@ cons:
 - slower (full file parse + setup)
 - less granular control
 
+## .verdict: can we build this?
+
+**partially yes, but with significant gaps.**
+
+### what we CAN do with a custom runner
+
+| capability | feasibility |
+|------------|-------------|
+| sequential execution within suite | ✅ yes |
+| skip subsequent tests on failure | ✅ yes |
+| retry loop around suite execution | ✅ yes |
+| clear test result state | ✅ yes |
+| emit retry attempt events | ✅ yes |
+
+### what we CANNOT do (vitest core limitations)
+
+| capability | feasibility | why |
+|------------|-------------|-----|
+| re-run `beforeAll` hooks | ❌ no | hooks managed internally, not exposed to runner |
+| reset module-level state | ❌ no | would require re-import of test file |
+| spawn fresh worker on retry | ❌ no | pool management outside runner scope |
+| clear closure variables | ❌ no | no access to closure scope |
+| re-run passed tests with fresh state | ⚠️ partial | can reset result, but state persists |
+
+### the fundamental blocker
+
+```
+┌─────────────────────────────────────────────────────┐
+│  vitest architecture assumption:                    │
+│  "one worker = one module instance = one run"       │
+│                                                     │
+│  playwright architecture:                           │
+│  "fresh worker per retry = fresh module state"      │
+│                                                     │
+│  to achieve playwright parity, vitest would need:   │
+│  - issue #7834: --retry-isolated (spawn fresh       │
+│    worker on retry)                                 │
+│  - or: module re-import mechanism                   │
+│  - or: beforeAll re-execution hook                  │
+└─────────────────────────────────────────────────────┘
+```
+
+### practical impact
+
+a custom runner can achieve **skip-on-failure** behavior:
+
+```
+test A → PASS
+test B → FAIL
+test C → SKIPPED (due to B failure)
+```
+
+but cannot achieve **re-run-all-on-retry** behavior:
+
+```
+attempt 1:
+  test A → PASS (result cached, state persists)
+  test B → FAIL
+
+attempt 2 (what we want but can't do):
+  beforeAll → re-run (NOT POSSIBLE)
+  test A → re-run with fresh state (NOT POSSIBLE - state persists)
+  test B → re-run
+```
+
+## .recommendation
+
+### for test-fns
+
+1. **document the limitation** clearly in `limitation.describe-block-retry-semantics.md`
+
+2. **implement skip-on-failure** via custom runner as partial solution:
+   - sequential execution
+   - skip subsequent tests when one fails
+   - useful even without full retry
+
+3. **recommend workarounds** for users who need full serial retry:
+   - `criteria: 'EVERY'` creates N separate suites, each runs fresh
+   - single-test wrapper pattern (all logic in one retryable test)
+   - playwright for critical serial flows
+
+4. **monitor vitest #7834** for `--retry-isolated` support
+
+### timeline estimate
+
+| phase | effort | outcome |
+|-------|--------|---------|
+| skip-on-failure runner | 1-2 days | partial solution |
+| useThen cache reset | 1 day | improved isolation |
+| full serial retry | blocked | requires vitest core changes |
+
 ## .references
 
 - [vitest runner api](https://vitest.dev/advanced/runner.html)
 - [vitest task types](https://vitest.dev/advanced/api.html#tasks)
+- [vitest custom pool api](https://vitest.dev/advanced/pool.html)
+- [vitest #7834 - retry in clean environment](https://github.com/vitest-dev/vitest/issues/7834)
 - [playwright serial mode](https://playwright.dev/docs/test-retries#serial-mode)
 - related brief: `limitation.describe-block-retry-semantics.md`
+- related brief: `limitation.vitest-serial-retry-gap.md`
+- related brief: `analysis.useThen-retry-semantics.md`
