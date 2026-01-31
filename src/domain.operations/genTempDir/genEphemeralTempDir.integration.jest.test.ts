@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { genIsolatedTempInfra } from '../../infra/isomorph.fs/genIsolatedTempInfra';
@@ -168,6 +169,187 @@ describe('genEphemeralTempDir', () => {
         expect(fs.existsSync(path.join(tempInfra.pathPhysical, dirName2))).toBe(
           true,
         );
+      });
+    });
+  });
+
+  given('[case5] with git: true', () => {
+    when('[t0] genEphemeralTempDir is called with git: true', () => {
+      then('it creates a valid git repository', () => {
+        const dirName = genEphemeralTempDir({
+          slug: 'git-true-test',
+          git: true,
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        // verify .git exists
+        expect(fs.existsSync(path.join(fullPath, '.git'))).toBe(true);
+
+        // verify git rev-parse succeeds
+        const result = execSync('git rev-parse --git-dir', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(result.trim()).toBe('.git');
+      });
+
+      then('it creates a began commit', () => {
+        const dirName = genEphemeralTempDir({
+          slug: 'git-began-test',
+          git: true,
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        const log = execSync('git log --oneline', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+      });
+    });
+
+    when('[t1] genEphemeralTempDir is called with git: true and clone', () => {
+      then('it creates began and fixture commits', () => {
+        // setup fixture
+        const fixturePath = path.join(
+          tempInfra.pathPhysical,
+          '.test-fixture-git',
+        );
+        fs.mkdirSync(fixturePath, { recursive: true });
+        fs.writeFileSync(path.join(fixturePath, 'file.txt'), 'content');
+
+        const dirName = genEphemeralTempDir({
+          slug: 'git-fixture-test',
+          clone: fixturePath,
+          git: true,
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        const log = execSync('git log --oneline', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+        expect(log).toContain('fixture');
+      });
+
+      then('work tree is clean after return', () => {
+        // setup fixture
+        const fixturePath = path.join(
+          tempInfra.pathPhysical,
+          '.test-fixture-clean',
+        );
+        fs.mkdirSync(fixturePath, { recursive: true });
+        fs.writeFileSync(path.join(fixturePath, 'file.txt'), 'content');
+
+        const dirName = genEphemeralTempDir({
+          slug: 'git-clean-test',
+          clone: fixturePath,
+          git: true,
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        const status = execSync('git status --porcelain', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(status.trim()).toBe('');
+      });
+    });
+  });
+
+  given('[case6] with git: { commits: { init: false } }', () => {
+    when('[t0] genEphemeralTempDir is called', () => {
+      then('it creates a git repo but no commits', () => {
+        const dirName = genEphemeralTempDir({
+          slug: 'git-no-init-test',
+          git: { commits: { init: false } },
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        // git repo exists
+        expect(fs.existsSync(path.join(fullPath, '.git'))).toBe(true);
+
+        // no commits
+        expect(() => {
+          execSync('git log --oneline', { cwd: fullPath, stdio: 'pipe' });
+        }).toThrow();
+      });
+    });
+  });
+
+  given('[case7] with git: { commits: { fixture: false } }', () => {
+    when('[t0] genEphemeralTempDir is called with clone', () => {
+      then('it creates began commit but files are uncommitted', () => {
+        // setup fixture
+        const fixturePath = path.join(
+          tempInfra.pathPhysical,
+          '.test-fixture-no-fixture',
+        );
+        fs.mkdirSync(fixturePath, { recursive: true });
+        fs.writeFileSync(path.join(fixturePath, 'file.txt'), 'content');
+
+        const dirName = genEphemeralTempDir({
+          slug: 'git-no-fixture-test',
+          clone: fixturePath,
+          git: { commits: { fixture: false } },
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        // began commit exists
+        const log = execSync('git log --oneline', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+        expect(log).not.toContain('fixture');
+
+        // files are untracked
+        const status = execSync('git status --porcelain', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(status).toContain('??');
+      });
+    });
+  });
+
+  given('[case8] with git: true but no clone or symlink', () => {
+    when('[t0] genEphemeralTempDir is called', () => {
+      then('only began commit exists (no fixture commit)', () => {
+        const dirName = genEphemeralTempDir({
+          slug: 'git-no-content-test',
+          git: true,
+          tempInfra: { pathPhysical: tempInfra.pathPhysical },
+          gitRoot,
+        });
+        const fullPath = path.join(tempInfra.pathPhysical, dirName);
+
+        const log = execSync('git log --oneline', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+        expect(log).not.toContain('fixture');
+
+        // count commits
+        const commitCount = execSync('git rev-list --count HEAD', {
+          cwd: fullPath,
+          encoding: 'utf-8',
+        });
+        expect(commitCount.trim()).toBe('1');
       });
     });
   });

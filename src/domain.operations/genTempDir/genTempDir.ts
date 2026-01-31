@@ -53,17 +53,48 @@ export const isTempDir = (input: { path: string }): boolean => {
  * });
  * // => dir contains symlinks that reference repo root paths
  *
+ * @example
+ * // with git initialization
+ * const dir = genTempDir({
+ *   slug: 'git-test',
+ *   clone: './src/__fixtures__/example',
+ *   git: true,
+ * });
+ * // => dir is a git repo with 'began' and 'fixture' commits
+ *
+ * @example
+ * // git repo without auto-commits
+ * const dir = genTempDir({
+ *   slug: 'git-dirty-test',
+ *   clone: './src/__fixtures__/example',
+ *   git: { commits: { init: false } },
+ * });
+ * // => dir is a git repo with no commits (work tree is dirty)
+ *
  * @note
  * - physical files stored at /tmp/test-fns/{repo}/.temp/ (isolated from node_modules)
  * - symlink at @gitroot/.temp/genTempDir.symlink/ for discoverability
  * - directories are auto-pruned after 7 days
  * - timestamp prefix enables age-based cleanup without stat calls
  * - slug helps debuggers identify which test created the directory
+ * - git: true initializes a git repo with repo-local user config (ci-safe)
+ * - git 'began' commit is created before clone/symlinks (empty commit)
+ * - git 'fixture' commit is created after clone/symlinks (if content exists)
  */
 export const genTempDir = (input: {
   slug: string;
   clone?: string;
   symlink?: Array<{ at: string; to: string }>;
+  git?:
+    | boolean
+    | {
+        commits?: {
+          /** create empty 'began' commit after git init (default: true) */
+          init?: boolean;
+          /** commit clone/symlink content as 'fixture' (default: true) */
+          fixture?: boolean;
+        };
+      };
 }): string => {
   // get git root
   const gitRoot = getGitRoot();
@@ -79,6 +110,7 @@ export const genTempDir = (input: {
     slug: input.slug,
     clone: input.clone,
     symlink: input.symlink,
+    git: input.git,
     tempInfra: { pathPhysical: tempInfra.pathPhysical },
     gitRoot,
   });

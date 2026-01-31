@@ -344,4 +344,191 @@ describe('genTempDir acceptance', () => {
       });
     });
   });
+
+  // usecase.4: git repository initialization
+  given('[case8] a test that needs a git repo', () => {
+    const fixtureDir = path.join(__dirname, '.acceptance-test-git-fixture');
+
+    beforeEach(() => {
+      fs.mkdirSync(fixtureDir, { recursive: true });
+      fs.writeFileSync(path.join(fixtureDir, 'readme.md'), '# test');
+    });
+
+    afterEach(() => {
+      if (fs.existsSync(fixtureDir)) {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
+    });
+
+    when('[t0] genTempDir is called with { git: true }', () => {
+      then('returns a valid git repository', () => {
+        const { execSync } = require('node:child_process');
+        const dir = genTempDir({ slug: 'git-test', git: true });
+        createdDirs.push(dir);
+
+        // .git exists
+        expect(fs.existsSync(path.join(dir, '.git'))).toBe(true);
+
+        // git rev-parse succeeds
+        const result = execSync('git rev-parse --git-dir', {
+          cwd: dir,
+          encoding: 'utf-8',
+        });
+        expect(result.trim()).toBe('.git');
+      });
+
+      then('git log shows began commit', () => {
+        const { execSync } = require('node:child_process');
+        const dir = genTempDir({ slug: 'git-began-test', git: true });
+        createdDirs.push(dir);
+
+        const log = execSync('git log --oneline', {
+          cwd: dir,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+      });
+    });
+
+    when('[t1] genTempDir is called with { git: true, clone }', () => {
+      then('git log shows began and fixture commits', () => {
+        const { execSync } = require('node:child_process');
+        const dir = genTempDir({
+          slug: 'git-fixture-test',
+          clone: fixtureDir,
+          git: true,
+        });
+        createdDirs.push(dir);
+
+        const log = execSync('git log --oneline', {
+          cwd: dir,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+        expect(log).toContain('fixture');
+      });
+
+      then('work tree is clean after return', () => {
+        const { execSync } = require('node:child_process');
+        const dir = genTempDir({
+          slug: 'git-clean-test',
+          clone: fixtureDir,
+          git: true,
+        });
+        createdDirs.push(dir);
+
+        const status = execSync('git status --porcelain', {
+          cwd: dir,
+          encoding: 'utf-8',
+        });
+        expect(status.trim()).toBe('');
+      });
+    });
+  });
+
+  given('[case9] a test that needs an uninitialized git repo', () => {
+    const fixtureDir = path.join(__dirname, '.acceptance-test-git-noinit');
+
+    beforeEach(() => {
+      fs.mkdirSync(fixtureDir, { recursive: true });
+      fs.writeFileSync(path.join(fixtureDir, 'file.txt'), 'content');
+    });
+
+    afterEach(() => {
+      if (fs.existsSync(fixtureDir)) {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
+    });
+
+    when(
+      '[t0] genTempDir is called with { git: { commits: { init: false } } }',
+      () => {
+        then('git repo exists but has no commits', () => {
+          const { execSync } = require('node:child_process');
+          const dir = genTempDir({
+            slug: 'git-noinit-test',
+            git: { commits: { init: false } },
+          });
+          createdDirs.push(dir);
+
+          // git repo exists
+          expect(fs.existsSync(path.join(dir, '.git'))).toBe(true);
+
+          // no commits
+          expect(() => {
+            execSync('git log --oneline', { cwd: dir, stdio: 'pipe' });
+          }).toThrow();
+        });
+      },
+    );
+  });
+
+  given('[case10] a test that needs fixture content uncommitted', () => {
+    const fixtureDir = path.join(__dirname, '.acceptance-test-git-nofixture');
+
+    beforeEach(() => {
+      fs.mkdirSync(fixtureDir, { recursive: true });
+      fs.writeFileSync(path.join(fixtureDir, 'file.txt'), 'content');
+    });
+
+    afterEach(() => {
+      if (fs.existsSync(fixtureDir)) {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
+    });
+
+    when(
+      '[t0] genTempDir is called with { clone, git: { commits: { fixture: false } } }',
+      () => {
+        then('began commit exists but files are uncommitted', () => {
+          const { execSync } = require('node:child_process');
+          const dir = genTempDir({
+            slug: 'git-nofixture-test',
+            clone: fixtureDir,
+            git: { commits: { fixture: false } },
+          });
+          createdDirs.push(dir);
+
+          // began commit exists
+          const log = execSync('git log --oneline', {
+            cwd: dir,
+            encoding: 'utf-8',
+          });
+          expect(log).toContain('began');
+          expect(log).not.toContain('fixture');
+
+          // files are untracked
+          const status = execSync('git status --porcelain', {
+            cwd: dir,
+            encoding: 'utf-8',
+          });
+          expect(status).toContain('??');
+        });
+      },
+    );
+  });
+
+  given('[case11] a test that needs git repo without clone', () => {
+    when('[t0] genTempDir is called with { git: true } and no clone', () => {
+      then('only began commit exists (no fixture commit)', () => {
+        const { execSync } = require('node:child_process');
+        const dir = genTempDir({ slug: 'git-nocontent-test', git: true });
+        createdDirs.push(dir);
+
+        const log = execSync('git log --oneline', {
+          cwd: dir,
+          encoding: 'utf-8',
+        });
+        expect(log).toContain('began');
+        expect(log).not.toContain('fixture');
+
+        // only one commit
+        const commitCount = execSync('git rev-list --count HEAD', {
+          cwd: dir,
+          encoding: 'utf-8',
+        });
+        expect(commitCount.trim()).toBe('1');
+      });
+    });
+  });
 });
