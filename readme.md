@@ -527,6 +527,42 @@ notes:
 - throws `BadRequestError` if target does not exist
 - throws `BadRequestError` if symlink path collides with cloned content
 
+**with git initialization:**
+
+```ts
+import { genTempDir } from 'test-fns';
+
+describe('git status helper', () => {
+  given('a git repo with committed baseline', () => {
+    const testDir = genTempDir({
+      slug: 'git-status-test',
+      clone: './src/__fixtures__/project',
+      git: true,
+    });
+
+    when('a file is modified', () => {
+      fs.appendFileSync(path.join(testDir, 'config.json'), '\n// comment');
+
+      then('git diff detects the change', () => {
+        const diff = execSync('git diff', { cwd: testDir }).toString();
+        expect(diff).toContain('+// comment');
+      });
+    });
+  });
+});
+```
+
+git options:
+- `git: true` — init repo, commit 'began', clone/symlink, commit 'fixture'
+- `git: { commits: { init: false } }` — init repo only, no commits
+- `git: { commits: { fixture: false } }` — commit 'began' only, leave clone/symlink uncommitted
+
+notes:
+- repo-local git config is set (ci-safe, no global config needed)
+- 'began' commit is empty (created before clone/symlinks)
+- 'fixture' commit contains all clone/symlink content
+- if no clone/symlink provided, only 'began' commit is created
+
 **directory format:**
 
 ```

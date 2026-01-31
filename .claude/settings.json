@@ -76,6 +76,17 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run --if-present fix",
+            "timeout": 30,
+            "author": "repo=ehmpathy/role=mechanic"
+          }
+        ]
       }
     ]
   },
@@ -120,6 +131,7 @@
       "Bash(npx rhachet run --skill cpsafe:*)",
       "Bash(npx rhachet run --skill mvsafe:*)",
       "Bash(npx rhachet run --skill rmsafe:*)",
+      "Bash(npx rhachet run --skill symlink:*)",
       "Bash(npx rhachet run --skill show.gh.action.logs:*)",
       "Bash(npx rhachet run --skill show.gh.test.errors:*)",
       "Bash(npx rhachet run --skill show.gh.test.errors --scope test-integration)",
@@ -129,7 +141,14 @@
       "Bash(npm list:*)",
       "Bash(npm remove:*)",
       "Bash(npm help:*)",
+      "Bash(npm why:*)",
+      "Bash(pnpm view:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm remove:*)",
       "Bash(pnpm help:*)",
+      "Bash(pnpm why:*)",
+      "Bash(npm ci)",
+      "Bash(pnpm install --frozen-lockfile)",
       "Bash(npx tsx ./bin/run:*)",
       "Bash(npm run build:*)",
       "Bash(npm run build:compile)",
@@ -252,6 +271,7 @@
       "Bash(git remote set-url:*)",
       "Bash(git stash:*)",
       "Bash(git tag -d:*)",
+      "Bash(ln:*)",
       "Bash(mv:*)",
       "Bash(npx biome:*)",
       "Bash(npx jest:*)",
