@@ -18,6 +18,8 @@
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
+    "./slowtest.reporter.jest": "./dist/contract/slowtest.reporter.jest.js",
+    "./slowtest.reporter.vitest": "./dist/contract/slowtest.reporter.vitest.js",
     "./vitest.setup": "./dist/contract/vitest.setup.js"
   },
   "engines": {
@@ -68,10 +70,12 @@
   "dependencies": {
     "domain-objects": "0.31.7",
     "helpful-errors": "1.5.3",
+    "iso-time": "1.11.3",
     "uuid": "10.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
+    "@jest/reporters": "30.2.0",
     "@commitlint/cli": "19.5.0",
     "@commitlint/config-conventional": "19.5.0",
     "@swc/core": "1.15.3",
@@ -90,11 +94,11 @@
     "esbuild-register": "3.6.0",
     "husky": "8.0.3",
     "jest": "30.2.0",
-    "rhachet": "1.28.2",
-    "rhachet-brains-anthropic": "0.3.0",
-    "rhachet-roles-bhrain": "0.7.2",
+    "rhachet": "1.29.7",
+    "rhachet-brains-anthropic": "0.3.3",
+    "rhachet-roles-bhrain": "0.7.5",
     "rhachet-roles-bhuild": "0.7.0",
-    "rhachet-roles-ehmpathy": "1.17.35",
+    "rhachet-roles-ehmpathy": "1.18.0",
     "tsc-alias": "1.8.10",
     "tsx": "4.21.0",
     "typescript": "5.4.5",

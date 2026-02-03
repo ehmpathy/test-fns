@@ -590,3 +590,137 @@ import { isTempDir } from 'test-fns';
 isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
 isTempDir({ path: '/tmp/random' }); // false
 ```
+
+## slowtest reporter
+
+identify slow tests in your test suite with hierarchical time visibility.
+
+### what it does
+
+the slowtest reporter runs after your tests complete and shows:
+- which test files are slow (above a configurable threshold)
+- nested hierarchy breakdown with time spent in each `given`/`when`/`then` block
+- hook time (setup/teardown) separated from test execution time
+
+### jest configuration
+
+```ts
+// jest.config.ts
+import type { Config } from 'jest';
+
+const config: Config = {
+  reporters: [
+    'default',
+    ['test-fns/slowtest.reporter.jest', {
+      slow: '3s',                        // threshold (default: 3s for unit, 10s for integration)
+      output: '.slowtest/report.json',   // optional: export json report
+      top: 10,                           // optional: limit terminal output to top N slow files
+    }],
+  ],
+};
+
+export default config;
+```
+
+### vitest configuration
+
+```ts
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import SlowtestReporter from 'test-fns/slowtest.reporter.vitest';
+
+export default defineConfig({
+  test: {
+    reporters: [
+      'default',
+      new SlowtestReporter({
+        slow: '3s',
+        output: '.slowtest/report.json',
+      }),
+    ],
+  },
+});
+```
+
+### terminal output
+
+after tests complete, you'll see a report like:
+
+```
+slowtest report:
+----------------------------------------------------------------------
+🐌 src/invoice/invoice.test.ts                              8s 710ms [SLOW]
+   └── given: [case1] overdue invoice                       7s 230ms
+       ├── (hooks: 340ms)
+       └── when: [t0] nurture triggered                     6s 890ms
+           ├── then: sends reminder email                   6s 10ms
+           └── then: logs notification                      880ms
+
+🐌 src/auth/login.test.ts                                   3s 500ms [SLOW]
+
+----------------------------------------------------------------------
+total: 15s 10ms
+files: 4
+slow: 2 file(s) above threshold
+```
+
+the report shows:
+- 🐌 emoji marks slow files
+- hierarchical breakdown with `given` > `when` > `then` structure
+- hook time displayed as `(hooks: Xms)` when setup contributes to block duration
+- summary with total time, file count, and slow file count
+
+### configuration options
+
+| option | type | default | description |
+|--------|------|---------|-------------|
+| `slow` | `number \| string` | `3000` (3s) | threshold in ms or human-readable string (`'3s'`, `'500ms'`) |
+| `output` | `string` | — | path to write json report (e.g., `.slowtest/report.json`) |
+| `top` | `number` | — | limit terminal output to top N slowest files |
+
+### json output format
+
+when `output` is configured, the reporter writes a json file:
+
+```json
+{
+  "generated": "2026-01-31T14:23:00Z",
+  "summary": {
+    "total": 15010,
+    "files": 4,
+    "slow": 2
+  },
+  "files": [
+    {
+      "path": "src/invoice/invoice.test.ts",
+      "duration": 8710,
+      "slow": true,
+      "blocks": [
+        {
+          "type": "given",
+          "name": "[case1] overdue invoice",
+          "duration": 7230,
+          "hookDuration": 340,
+          "blocks": [
+            {
+              "type": "when",
+              "name": "[t0] nurture triggered",
+              "duration": 6890,
+              "hookDuration": 0,
+              "tests": [
+                { "name": "then: sends reminder email", "duration": 6010 },
+                { "name": "then: logs notification", "duration": 880 }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+use the json output for:
+- trend analysis over time
+- ci shard optimization (distribute tests by time)
+- integration with other tools

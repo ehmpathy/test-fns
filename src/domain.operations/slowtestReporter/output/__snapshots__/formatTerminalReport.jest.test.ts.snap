@@ -1,0 +1,99 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`formatTerminalReport given: [case1] report with multiple slow files when: [t0] format is called with default config then: matches snapshot 1`] = `
+"
+slowtest report:
+----------------------------------------------------------------------
+🐌 src/invoice.test.ts                                      8s 710ms [SLOW]
+
+🐌 src/auth.test.ts                                         3s 500ms [SLOW]
+
+🐌 src/customer.test.ts                                     1s 500ms [SLOW]
+
+----------------------------------------------------------------------
+total: 15s 10ms
+files: 4
+slow: 3 file(s) above threshold
+"
+`;
+
+exports[`formatTerminalReport given: [case1] report with multiple slow files when: [t1] format is called with top=2 then: matches snapshot 1`] = `
+"
+slowtest report:
+----------------------------------------------------------------------
+🐌 src/invoice.test.ts                                      8s 710ms [SLOW]
+
+🐌 src/auth.test.ts                                         3s 500ms [SLOW]
+
+----------------------------------------------------------------------
+total: 15s 10ms
+files: 4
+slow: 3 file(s) above threshold
+(shows 2 of 3 slow files, use 'top' to adjust)
+"
+`;
+
+exports[`formatTerminalReport given: [case2] report with hierarchy when: [t0] format is called then: matches snapshot 1`] = `
+"
+slowtest report:
+----------------------------------------------------------------------
+🐌 src/invoice.test.ts                                      8s 710ms [SLOW]
+   └── given: [case1] overdue invoice                       7s 230ms
+       ├── (hooks: 340ms)
+       └── when: [t0] nurture triggered                     6s 890ms
+           ├── then: sends reminder email                   6s 10ms
+           └── then: logs notification                      880ms
+
+----------------------------------------------------------------------
+total: 8s 710ms
+files: 1
+slow: 1 file(s) above threshold
+"
+`;
+
+exports[`formatTerminalReport given: [case3] empty report when: [t0] format is called then: matches snapshot 1`] = `
+"
+slowtest report:
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+total: 0s
+files: 0
+"
+`;
+
+exports[`formatTerminalReport given: [case4] report with no slow files when: [t0] format is called then: matches snapshot 1`] = `
+"
+slowtest report:
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+total: 3s 400ms
+files: 2
+"
+`;
+
+exports[`formatTerminalReport given: [case5] multiple files with hierarchy when: [t0] format is called then: matches snapshot 1`] = `
+"
+slowtest report:
+----------------------------------------------------------------------
+🐌 src/invoice.test.ts                                      8s 710ms [SLOW]
+   └── given: [case1] overdue invoice                       7s 230ms
+       ├── (hooks: 500ms)
+       └── when: [t0] nurture triggered                     6s 730ms
+           ├── then: sends reminder email                   6s 10ms
+           └── then: logs notification                      720ms
+
+🐌 src/auth.test.ts                                         4s 200ms [SLOW]
+   ├── given: [case1] user with mfa                         3s 800ms
+   │   ├── (hooks: 200ms)
+   │   └── when: [t0] login attempt                         3s 600ms
+   │       ├── then: prompts for totp                       1s 800ms
+   │       └── then: validates token                        1s 800ms
+   └── given: [case2] user without mfa                      400ms
+       └── then: logs in directly                           400ms
+
+----------------------------------------------------------------------
+total: 15s
+files: 3
+slow: 2 file(s) above threshold
+"
+`;
