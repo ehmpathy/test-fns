@@ -148,4 +148,47 @@ describe('genIsolatedTempInfra', () => {
       });
     });
   });
+
+  given('[case5] multiple rapid calls to genIsolatedTempInfra', () => {
+    // setup: remove symlink to simulate first-time setup
+    beforeAll(() => {
+      if (fs.existsSync(pathSymlinkExpected)) {
+        const stat = fs.lstatSync(pathSymlinkExpected);
+        if (stat.isSymbolicLink()) {
+          fs.unlinkSync(pathSymlinkExpected);
+        } else if (stat.isDirectory()) {
+          fs.rmSync(pathSymlinkExpected, { recursive: true, force: true });
+        }
+      }
+    });
+
+    when('[t0] 10 calls are made in rapid succession', () => {
+      const scene = useBeforeAll(async () => {
+        // call genIsolatedTempInfra 10 times rapidly
+        // this tests idempotency - all calls should succeed
+        const results = Array.from({ length: 10 }, () =>
+          genIsolatedTempInfra({ gitRoot }),
+        );
+        return { results };
+      });
+
+      then('all calls succeed', () => {
+        expect(scene.results).toHaveLength(10);
+      });
+
+      then('all calls return same paths', () => {
+        for (const result of scene.results) {
+          expect(result.pathPhysical).toEqual(pathPhysicalExpected);
+          expect(result.pathSymlink).toEqual(pathSymlinkExpected);
+        }
+      });
+
+      then('symlink is extant and points to correct target', () => {
+        expect(fs.lstatSync(pathSymlinkExpected).isSymbolicLink()).toBe(true);
+        expect(fs.readlinkSync(pathSymlinkExpected)).toEqual(
+          pathPhysicalExpected,
+        );
+      });
+    });
+  });
 });
