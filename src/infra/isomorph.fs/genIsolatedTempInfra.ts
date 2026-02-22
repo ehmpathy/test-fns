@@ -29,6 +29,8 @@ temp directories are ephemeral and should not contain important data.
  * .what = ensures the isolated temp infrastructure exists
  * .why = creates physical storage in /tmp/ with symlink at gitroot for discoverability
  *
+ * .note = symlink creation is idempotent — safe to call from parallel workers
+ *
  * @throws UnexpectedCodePathError if /tmp/ does not exist
  */
 export const genIsolatedTempInfra = (input: {
@@ -93,8 +95,31 @@ export const genIsolatedTempInfra = (input: {
       fs.symlinkSync(pathPhysical, pathSymlink);
     }
   } else {
-    // symlink absent, create it
-    fs.symlinkSync(pathPhysical, pathSymlink);
+    // symlink absent, create it idempotently (race-safe for parallel workers)
+    try {
+      fs.symlinkSync(pathPhysical, pathSymlink);
+    } catch (error) {
+      // handle race: another worker created symlink between check and create
+      if (!(error instanceof Error)) throw error;
+      if (!error.message.includes('EEXIST')) throw error;
+
+      // verify symlink was created by another worker with expected target
+      const stat = fs.lstatSync(pathSymlink);
+      if (!stat.isSymbolicLink()) {
+        // not a symlink (file or dir) — remove and retry
+        fs.rmSync(pathSymlink, { recursive: true, force: true });
+        fs.symlinkSync(pathPhysical, pathSymlink);
+      } else {
+        // is a symlink — verify target
+        const currentTarget = fs.readlinkSync(pathSymlink);
+        if (currentTarget !== pathPhysical) {
+          // stale target — update
+          fs.unlinkSync(pathSymlink);
+          fs.symlinkSync(pathPhysical, pathSymlink);
+        }
+        // else: correct symlink already extant — idempotent success
+      }
+    }
   }
 
   return { pathPhysical, pathSymlink };
