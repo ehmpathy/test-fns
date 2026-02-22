@@ -103,22 +103,22 @@ export const genIsolatedTempInfra = (input: {
       if (!(error instanceof Error)) throw error;
       if (!error.message.includes('EEXIST')) throw error;
 
-      // verify symlink was created by another worker with expected target
+      // another worker created the symlink — verify it points to correct target
       const stat = fs.lstatSync(pathSymlink);
-      if (!stat.isSymbolicLink()) {
-        // not a symlink (file or dir) — remove and retry
-        fs.rmSync(pathSymlink, { recursive: true, force: true });
-        fs.symlinkSync(pathPhysical, pathSymlink);
-      } else {
-        // is a symlink — verify target
+      if (stat.isSymbolicLink()) {
         const currentTarget = fs.readlinkSync(pathSymlink);
-        if (currentTarget !== pathPhysical) {
-          // stale target — update
-          fs.unlinkSync(pathSymlink);
-          fs.symlinkSync(pathPhysical, pathSymlink);
+        if (currentTarget === pathPhysical) {
+          // correct symlink created by another worker — idempotent success
+          return { pathPhysical, pathSymlink };
         }
-        // else: correct symlink already extant — idempotent success
       }
+
+      // edge case: another worker created wrong symlink/file/dir
+      // this should be rare — throw to surface the issue rather than silently fix
+      throw new UnexpectedCodePathError(
+        'symlink exists but points to unexpected target',
+        { pathPhysical, pathSymlink, stat: stat.isSymbolicLink() },
+      );
     }
   }
 
