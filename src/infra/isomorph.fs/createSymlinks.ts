@@ -51,9 +51,7 @@ export const createSymlinks = (input: {
 
     // ensure parent directories exist
     const parentDir = path.dirname(symlinkPath);
-    if (!fs.existsSync(parentDir)) {
-      fs.mkdirSync(parentDir, { recursive: true });
-    }
+    fs.mkdirSync(parentDir, { recursive: true });
 
     // create symlink
     fs.symlinkSync(targetPath, symlinkPath);

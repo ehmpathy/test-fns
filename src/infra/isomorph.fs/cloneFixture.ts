@@ -15,10 +15,8 @@ export const cloneFixture = (input: { from: string; to: string }): void => {
     });
   }
 
-  // create destination if absent
-  if (!fs.existsSync(input.to)) {
-    fs.mkdirSync(input.to, { recursive: true });
-  }
+  // ensure destination exists
+  fs.mkdirSync(input.to, { recursive: true });
 
   // copy recursively with symlinks preserved
   fs.cpSync(input.from, input.to, {

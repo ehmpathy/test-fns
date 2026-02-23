@@ -1,0 +1,10 @@
+# .meter state files are local-only
+# they track per-session mechanic quotas (commit uses, push permissions, etc.)
+# and must not be committed to the repo
+
+# ignore all state files
+*.jsonc
+*.json
+
+# but keep the gitignore
+!.gitignore

@@ -3,6 +3,8 @@ import { UnexpectedCodePathError } from 'helpful-errors';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { computeIsolatedTempBasePath } from './computeIsolatedTempBasePath';
+import { findsertFile } from './findsertFile';
+import { findsertSymlink } from './findsertSymlink';
 
 const TEMP_README_CONTENT = `# genTempDir.symlink
 
@@ -50,77 +52,28 @@ export const genIsolatedTempInfra = (input: {
   const pathSymlink = path.join(pathGitRootTemp, 'genTempDir.symlink');
 
   // ensure @gitroot/.temp/ dir exists
-  if (!fs.existsSync(pathGitRootTemp)) {
-    fs.mkdirSync(pathGitRootTemp, { recursive: true });
-  }
+  fs.mkdirSync(pathGitRootTemp, { recursive: true });
 
   // ensure physical dir exists: /tmp/test-fns/{repo-dirname}/.temp/
-  if (!fs.existsSync(pathPhysical)) {
-    fs.mkdirSync(pathPhysical, { recursive: true });
-  }
+  fs.mkdirSync(pathPhysical, { recursive: true });
 
-  // write readme.md to physical dir if absent
-  const readmePath = path.join(pathPhysical, 'readme.md');
-  if (!fs.existsSync(readmePath)) {
-    fs.writeFileSync(readmePath, TEMP_README_CONTENT);
-  }
+  // findsert readme.md to physical dir
+  findsertFile({
+    path: path.join(pathPhysical, 'readme.md'),
+    content: TEMP_README_CONTENT,
+  });
 
-  // write .gitignore to physical dir if absent (ignore all temp directories)
-  const gitignorePath = path.join(pathPhysical, '.gitignore');
-  if (!fs.existsSync(gitignorePath)) {
-    fs.writeFileSync(gitignorePath, '*\n');
-  }
+  // findsert .gitignore to physical dir
+  findsertFile({
+    path: path.join(pathPhysical, '.gitignore'),
+    content: '*\n',
+  });
 
-  // ensure symlink at @gitroot/.temp/genTempDir.symlink
-  const symlinkStat = fs.existsSync(pathSymlink)
-    ? fs.lstatSync(pathSymlink)
-    : null;
-
-  if (symlinkStat) {
-    // check if it's a symlink
-    if (symlinkStat.isSymbolicLink()) {
-      // verify target matches, update if stale
-      const currentTarget = fs.readlinkSync(pathSymlink);
-      if (currentTarget !== pathPhysical) {
-        fs.unlinkSync(pathSymlink);
-        fs.symlinkSync(pathPhysical, pathSymlink);
-      }
-    } else if (symlinkStat.isDirectory()) {
-      // if directory found, remove it (contents ephemeral) and create symlink
-      fs.rmSync(pathSymlink, { recursive: true, force: true });
-      fs.symlinkSync(pathPhysical, pathSymlink);
-    } else {
-      // if file found, remove it and create symlink
-      fs.unlinkSync(pathSymlink);
-      fs.symlinkSync(pathPhysical, pathSymlink);
-    }
-  } else {
-    // symlink absent, create it idempotently (race-safe for parallel workers)
-    try {
-      fs.symlinkSync(pathPhysical, pathSymlink);
-    } catch (error) {
-      // handle race: another worker created symlink between check and create
-      if (!(error instanceof Error)) throw error;
-      if (!error.message.includes('EEXIST')) throw error;
-
-      // another worker created the symlink — verify it points to correct target
-      const stat = fs.lstatSync(pathSymlink);
-      if (stat.isSymbolicLink()) {
-        const currentTarget = fs.readlinkSync(pathSymlink);
-        if (currentTarget === pathPhysical) {
-          // correct symlink created by another worker — idempotent success
-          return { pathPhysical, pathSymlink };
-        }
-      }
-
-      // edge case: another worker created wrong symlink/file/dir
-      // this should be rare — throw to surface the issue rather than silently fix
-      throw new UnexpectedCodePathError(
-        'symlink exists but points to unexpected target',
-        { pathPhysical, pathSymlink, stat: stat.isSymbolicLink() },
-      );
-    }
-  }
+  // findsert symlink at @gitroot/.temp/genTempDir.symlink
+  findsertSymlink({
+    target: pathPhysical,
+    path: pathSymlink,
+  });
 
   return { pathPhysical, pathSymlink };
 };
