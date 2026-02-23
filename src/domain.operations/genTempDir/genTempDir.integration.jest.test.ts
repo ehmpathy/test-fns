@@ -1,6 +1,7 @@
+import { given, then, when } from '@src/contract';
+
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { given, then, when } from '../../contract';
 import { genTempDir, isTempDir } from './genTempDir';
 import { resetPruneThrottle } from './pruneStale';
 

@@ -1,4 +1,5 @@
-import { given, then, when } from '../../domain.operations/givenWhenThen';
+import { given, then, when } from '@src/domain.operations/givenWhenThen';
+
 import { computeIsolatedTempBasePath } from './computeIsolatedTempBasePath';
 
 describe('computeIsolatedTempBasePath', () => {

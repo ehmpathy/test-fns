@@ -1,9 +1,10 @@
+import { cloneFixture } from '@src/infra/isomorph.fs/cloneFixture';
+import { commitGitChanges } from '@src/infra/isomorph.fs/commitGitChanges';
+import { createSymlinks } from '@src/infra/isomorph.fs/createSymlinks';
+import { initGitRepo } from '@src/infra/isomorph.fs/initGitRepo';
+
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { cloneFixture } from '../../infra/isomorph.fs/cloneFixture';
-import { commitGitChanges } from '../../infra/isomorph.fs/commitGitChanges';
-import { createSymlinks } from '../../infra/isomorph.fs/createSymlinks';
-import { initGitRepo } from '../../infra/isomorph.fs/initGitRepo';
 import { asExplicitGitOptions, type GitOptions } from './asExplicitGitOptions';
 import { computeTempDirName } from './computeTempDirName';
 

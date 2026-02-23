@@ -2,7 +2,7 @@
  * .what = test fixture with fast tests
  * .why = used to verify slowtest reporter handles fast tests
  */
-import { given, when, then } from '../../../../../contract';
+import { given, when, then } from '@src/contract';
 
 describe('fast suite', () => {
   given('[case1] instant setup', () => {

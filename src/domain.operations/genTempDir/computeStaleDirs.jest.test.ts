@@ -1,4 +1,5 @@
-import { given, then, when } from '../../contract';
+import { given, then, when } from '@src/contract';
+
 import { computeStaleDirs, type DirEntry } from './computeStaleDirs';
 
 const ONE_HOUR_MS: number = 60 * 60 * 1000;
