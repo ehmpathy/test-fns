@@ -11,43 +11,63 @@ describe('genIsolatedTempInfra', () => {
   const pathPhysicalExpected = `/tmp/test-fns/${repoDirname}/.temp`;
   const pathSymlinkExpected = path.join(gitRoot, '.temp', 'genTempDir.symlink');
 
-  // cleanup after tests
+  /**
+   * .note = destructive tests (case1, case3, case5) use isolated "fake gitRoot" dirs
+   *         to avoid race conditions with parallel test files that use the shared
+   *         genTempDir.symlink at the real gitRoot
+   */
+  const isolatedGitRoot = path.join(gitRoot, '.temp', '.test-isolated-gitroot');
+  const isolatedRepoDirname = '.test-isolated-gitroot';
+  const isolatedPathPhysical = `/tmp/test-fns/${isolatedRepoDirname}/.temp`;
+  const isolatedPathSymlink = path.join(
+    isolatedGitRoot,
+    '.temp',
+    'genTempDir.symlink',
+  );
+
+  // cleanup isolated paths after tests
   afterAll(() => {
-    // remove the symlink if it exists
-    if (
-      fs.existsSync(pathSymlinkExpected) &&
-      fs.lstatSync(pathSymlinkExpected).isSymbolicLink()
-    ) {
-      fs.unlinkSync(pathSymlinkExpected);
+    // cleanup isolated gitRoot
+    if (fs.existsSync(isolatedGitRoot)) {
+      fs.rmSync(isolatedGitRoot, { recursive: true, force: true });
+    }
+    // cleanup isolated physical path
+    if (fs.existsSync(isolatedPathPhysical)) {
+      fs.rmSync(isolatedPathPhysical, { recursive: true, force: true });
     }
   });
 
   given('[case1] first-time setup', () => {
-    // cleanup before test to simulate first-time
+    // setup: ensure isolated gitRoot exists but symlink doesn't
     beforeAll(() => {
-      if (fs.existsSync(pathSymlinkExpected)) {
-        const stat = fs.lstatSync(pathSymlinkExpected);
+      // create isolated gitRoot
+      fs.mkdirSync(isolatedGitRoot, { recursive: true });
+      // ensure symlink doesn't exist
+      const symlinkDir = path.dirname(isolatedPathSymlink);
+      if (fs.existsSync(isolatedPathSymlink)) {
+        const stat = fs.lstatSync(isolatedPathSymlink);
         if (stat.isSymbolicLink()) {
-          fs.unlinkSync(pathSymlinkExpected);
+          fs.unlinkSync(isolatedPathSymlink);
         } else if (stat.isDirectory()) {
-          fs.rmSync(pathSymlinkExpected, { recursive: true, force: true });
+          fs.rmSync(isolatedPathSymlink, { recursive: true, force: true });
         }
       }
     });
 
     when('[t0] genIsolatedTempInfra is called', () => {
+      // use isolated gitRoot to avoid conflicts with parallel tests
       const result = useBeforeAll(async () =>
-        genIsolatedTempInfra({ gitRoot }),
+        genIsolatedTempInfra({ gitRoot: isolatedGitRoot }),
       );
 
       then('it returns pathPhysical at /tmp/test-fns/{repo}/.temp', () => {
-        expect(result.pathPhysical).toEqual(pathPhysicalExpected);
+        expect(result.pathPhysical).toEqual(isolatedPathPhysical);
       });
 
       then(
         'it returns pathSymlink at @gitroot/.temp/genTempDir.symlink',
         () => {
-          expect(result.pathSymlink).toEqual(pathSymlinkExpected);
+          expect(result.pathSymlink).toEqual(isolatedPathSymlink);
         },
       );
 
@@ -106,28 +126,49 @@ describe('genIsolatedTempInfra', () => {
   });
 
   given('[case3] a real directory exists at symlink path', () => {
+    // use isolated gitRoot to avoid conflicts with parallel tests
+    const case3GitRoot = path.join(
+      gitRoot,
+      '.temp',
+      '.test-isolated-gitroot-case3',
+    );
+    const case3PathSymlink = path.join(
+      case3GitRoot,
+      '.temp',
+      'genTempDir.symlink',
+    );
+
     // setup: create a real directory at the symlink path
     beforeAll(() => {
+      // create isolated gitRoot
+      fs.mkdirSync(case3GitRoot, { recursive: true });
       // ensure any prior symlink is removed
-      if (fs.existsSync(pathSymlinkExpected)) {
-        const stat = fs.lstatSync(pathSymlinkExpected);
+      if (fs.existsSync(case3PathSymlink)) {
+        const stat = fs.lstatSync(case3PathSymlink);
         if (stat.isSymbolicLink()) {
-          fs.unlinkSync(pathSymlinkExpected);
+          fs.unlinkSync(case3PathSymlink);
         } else if (stat.isDirectory()) {
-          fs.rmSync(pathSymlinkExpected, { recursive: true, force: true });
+          fs.rmSync(case3PathSymlink, { recursive: true, force: true });
         }
       }
-      // create a real directory
-      fs.mkdirSync(pathSymlinkExpected, { recursive: true });
+      // create a real directory at the symlink path
+      fs.mkdirSync(case3PathSymlink, { recursive: true });
       fs.writeFileSync(
-        path.join(pathSymlinkExpected, 'test-file.txt'),
+        path.join(case3PathSymlink, 'test-file.txt'),
         'ephemeral content',
       );
     });
 
+    afterAll(() => {
+      // cleanup isolated gitRoot
+      if (fs.existsSync(case3GitRoot)) {
+        fs.rmSync(case3GitRoot, { recursive: true, force: true });
+      }
+    });
+
     when('[t0] genIsolatedTempInfra is called', () => {
       const result = useBeforeAll(async () =>
-        genIsolatedTempInfra({ gitRoot }),
+        genIsolatedTempInfra({ gitRoot: case3GitRoot }),
       );
 
       then('the directory is replaced with a symlink', () => {
@@ -150,15 +191,38 @@ describe('genIsolatedTempInfra', () => {
   });
 
   given('[case5] multiple rapid calls to genIsolatedTempInfra', () => {
-    // setup: remove symlink to simulate first-time setup
+    // use isolated gitRoot to avoid conflicts with parallel tests
+    const case5GitRoot = path.join(
+      gitRoot,
+      '.temp',
+      '.test-isolated-gitroot-case5',
+    );
+    const case5PathPhysical = `/tmp/test-fns/.test-isolated-gitroot-case5/.temp`;
+    const case5PathSymlink = path.join(
+      case5GitRoot,
+      '.temp',
+      'genTempDir.symlink',
+    );
+
+    // setup: ensure isolated gitRoot exists but symlink doesn't
     beforeAll(() => {
-      if (fs.existsSync(pathSymlinkExpected)) {
-        const stat = fs.lstatSync(pathSymlinkExpected);
+      // create isolated gitRoot
+      fs.mkdirSync(case5GitRoot, { recursive: true });
+      // remove symlink if exists
+      if (fs.existsSync(case5PathSymlink)) {
+        const stat = fs.lstatSync(case5PathSymlink);
         if (stat.isSymbolicLink()) {
-          fs.unlinkSync(pathSymlinkExpected);
+          fs.unlinkSync(case5PathSymlink);
         } else if (stat.isDirectory()) {
-          fs.rmSync(pathSymlinkExpected, { recursive: true, force: true });
+          fs.rmSync(case5PathSymlink, { recursive: true, force: true });
         }
+      }
+    });
+
+    afterAll(() => {
+      // cleanup isolated gitRoot
+      if (fs.existsSync(case5GitRoot)) {
+        fs.rmSync(case5GitRoot, { recursive: true, force: true });
       }
     });
 
@@ -167,7 +231,7 @@ describe('genIsolatedTempInfra', () => {
         // call genIsolatedTempInfra 10 times rapidly
         // this tests idempotency - all calls should succeed
         const results = Array.from({ length: 10 }, () =>
-          genIsolatedTempInfra({ gitRoot }),
+          genIsolatedTempInfra({ gitRoot: case5GitRoot }),
         );
         return { results };
       });
@@ -178,16 +242,14 @@ describe('genIsolatedTempInfra', () => {
 
       then('all calls return same paths', () => {
         for (const result of scene.results) {
-          expect(result.pathPhysical).toEqual(pathPhysicalExpected);
-          expect(result.pathSymlink).toEqual(pathSymlinkExpected);
+          expect(result.pathPhysical).toEqual(case5PathPhysical);
+          expect(result.pathSymlink).toEqual(case5PathSymlink);
         }
       });
 
       then('symlink is extant and points to correct target', () => {
-        expect(fs.lstatSync(pathSymlinkExpected).isSymbolicLink()).toBe(true);
-        expect(fs.readlinkSync(pathSymlinkExpected)).toEqual(
-          pathPhysicalExpected,
-        );
+        expect(fs.lstatSync(case5PathSymlink).isSymbolicLink()).toBe(true);
+        expect(fs.readlinkSync(case5PathSymlink)).toEqual(case5PathPhysical);
       });
     });
   });

@@ -42,14 +42,14 @@ export const genEphemeralTempDir = (input: {
   }
 
   // clone fixture if requested
-  if (input?.clone) {
+  if (input.clone) {
     // resolve clone path relative to cwd
     const clonePath = path.resolve(process.cwd(), input.clone);
     cloneFixture({ from: clonePath, to: tempDir });
   }
 
   // create symlinks if requested (after clone, so symlinks can augment cloned content)
-  if (input?.symlink && input.symlink.length > 0) {
+  if (input.symlink && input.symlink.length > 0) {
     createSymlinks({
       symlinks: input.symlink,
       tempDir,

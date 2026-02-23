@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 
 /**
  * .what = initializes a git repository with repo-local user config
@@ -19,14 +19,14 @@ export const initGitRepo = (input: {
   const userEmail = input.user?.email ?? 'test-fns@test.local';
 
   // initialize git repo
-  execSync('git init', { cwd: input.dir, stdio: 'pipe' });
+  spawnSync('git', ['init'], { cwd: input.dir, stdio: 'pipe' });
 
   // configure repo-local user identity (ci-safe)
-  execSync(`git config user.name "${userName}"`, {
+  spawnSync('git', ['config', 'user.name', userName], {
     cwd: input.dir,
     stdio: 'pipe',
   });
-  execSync(`git config user.email "${userEmail}"`, {
+  spawnSync('git', ['config', 'user.email', userEmail], {
     cwd: input.dir,
     stdio: 'pipe',
   });
