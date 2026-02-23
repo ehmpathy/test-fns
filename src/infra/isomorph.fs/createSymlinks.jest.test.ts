@@ -1,7 +1,8 @@
+import { given, then, when } from '@src/contract';
+
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { given, then, when } from '../../contract';
 import { createSymlinks } from './createSymlinks';
 
 describe('createSymlinks', () => {

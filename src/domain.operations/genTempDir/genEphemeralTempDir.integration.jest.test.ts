@@ -1,10 +1,11 @@
+import { given, then, when } from '@src/domain.operations/givenWhenThen';
+import { useBeforeAll } from '@src/domain.operations/usePrep';
+import { genIsolatedTempInfra } from '@src/infra/isomorph.fs/genIsolatedTempInfra';
+import { getGitRoot } from '@src/infra/isomorph.fs/getGitRoot';
+
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { genIsolatedTempInfra } from '../../infra/isomorph.fs/genIsolatedTempInfra';
-import { getGitRoot } from '../../infra/isomorph.fs/getGitRoot';
-import { given, then, when } from '../givenWhenThen';
-import { useBeforeAll } from '../usePrep';
 import { genEphemeralTempDir } from './genEphemeralTempDir';
 
 describe('genEphemeralTempDir', () => {

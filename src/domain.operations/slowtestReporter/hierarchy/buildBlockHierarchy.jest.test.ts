@@ -1,4 +1,5 @@
-import { given, then, when } from '../../../contract';
+import { given, then, when } from '@src/contract';
+
 import {
   buildBlockHierarchy,
   type FlatTestResult,

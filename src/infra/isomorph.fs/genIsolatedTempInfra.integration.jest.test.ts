@@ -1,7 +1,8 @@
+import { given, then, when } from '@src/domain.operations/givenWhenThen';
+import { useBeforeAll } from '@src/domain.operations/usePrep';
+
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { given, then, when } from '../../domain.operations/givenWhenThen';
-import { useBeforeAll } from '../../domain.operations/usePrep';
 import { genIsolatedTempInfra } from './genIsolatedTempInfra';
 import { getGitRoot } from './getGitRoot';
 

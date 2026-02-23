@@ -1,6 +1,7 @@
+import { genIsolatedTempInfra } from '@src/infra/isomorph.fs/genIsolatedTempInfra';
+import { getGitRoot } from '@src/infra/isomorph.fs/getGitRoot';
+
 import * as path from 'node:path';
-import { genIsolatedTempInfra } from '../../infra/isomorph.fs/genIsolatedTempInfra';
-import { getGitRoot } from '../../infra/isomorph.fs/getGitRoot';
 import { genEphemeralTempDir } from './genEphemeralTempDir';
 import { pruneStaleOnce } from './pruneStale';
 

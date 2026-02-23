@@ -13,18 +13,17 @@ import type {
   SlowtestFileData,
   SlowtestReport,
 } from '@src/domain.objects/SlowtestReport';
-
 import {
   buildBlockHierarchy,
   type FlatTestResult,
-} from '../hierarchy/buildBlockHierarchy';
-import { emitJsonReport } from '../output/emitJsonReport';
-import { formatTerminalReport } from '../output/formatTerminalReport';
+} from '@src/domain.operations/slowtestReporter/hierarchy/buildBlockHierarchy';
+import { emitJsonReport } from '@src/domain.operations/slowtestReporter/output/emitJsonReport';
+import { formatTerminalReport } from '@src/domain.operations/slowtestReporter/output/formatTerminalReport';
 import {
   evaluateThreshold,
   getDefaultThreshold,
   parseThresholdToMs,
-} from '../threshold/evaluateThreshold';
+} from '@src/domain.operations/slowtestReporter/threshold/evaluateThreshold';
 
 /**
  * .what = jest reporter implementation for slowtest

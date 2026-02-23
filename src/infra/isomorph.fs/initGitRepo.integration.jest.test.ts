@@ -1,8 +1,9 @@
+import { given, then, when } from '@src/contract';
+
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { given, then, when } from '../../contract';
 import { initGitRepo } from './initGitRepo';
 
 describe('initGitRepo', () => {

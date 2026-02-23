@@ -1,5 +1,6 @@
-import { given, then, when } from '../../../contract';
-import type { SlowtestReport } from '../../../domain.objects/SlowtestReport';
+import { given, then, when } from '@src/contract';
+import type { SlowtestReport } from '@src/domain.objects/SlowtestReport';
+
 import { formatDuration, formatTerminalReport } from './formatTerminalReport';
 
 describe('formatDuration', () => {
