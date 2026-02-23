@@ -2,7 +2,7 @@
   "name": "test-fns",
   "author": "ehmpathy",
   "description": "write usecase driven tests systematically for simpler, safer, and more readable code",
-  "version": "1.15.4",
+  "version": "1.15.5",
   "repository": "ehmpathy/test-fns",
   "homepage": "https://github.com/ehmpathy/test-fns",
   "keywords": [
