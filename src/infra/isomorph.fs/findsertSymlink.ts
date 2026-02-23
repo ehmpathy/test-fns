@@ -1,6 +1,7 @@
 import { UnexpectedCodePathError } from 'helpful-errors';
 
 import * as fs from 'node:fs';
+import { isSymlinkEexistError } from './isSymlinkEexistError';
 
 /**
  * .what = creates a symlink if absent, no-op if correct symlink exists
@@ -38,11 +39,7 @@ export const findsertSymlink = (input: {
     fs.symlinkSync(input.target, input.path);
   } catch (error) {
     // handle race: another worker created symlink between our check and create
-    if (!(error instanceof Error)) throw error;
-    const isEexist =
-      (error as NodeJS.ErrnoException).code === 'EEXIST' ||
-      error.message.includes('EEXIST');
-    if (!isEexist) throw error;
+    if (!isSymlinkEexistError(error)) throw error;
 
     // another worker created symlink — verify it's correct
     const raceStat = fs.lstatSync(input.path);
