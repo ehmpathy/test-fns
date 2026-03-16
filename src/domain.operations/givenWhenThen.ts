@@ -419,7 +419,9 @@ const then: Test = ((...input: TestInput<void>): void => {
             repeatableCtx.anyError = error;
           }
           // only throw on final attempt - earlier failures are retried
-          if (repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant) {
+          if (
+            repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant
+          ) {
             throw repeatableCtx.anyError ?? error;
           }
           // else: swallow error, let subsequent attempts try
@@ -450,7 +452,9 @@ const then: Test = ((...input: TestInput<void>): void => {
             repeatableCtx.anyError = error;
           }
           // only throw on final attempt - earlier failures are retried
-          if (repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant) {
+          if (
+            repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant
+          ) {
             throw repeatableCtx.anyError ?? error;
           }
           // else: swallow error, let subsequent attempts try
