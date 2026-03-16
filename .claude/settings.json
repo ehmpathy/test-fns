@@ -33,6 +33,12 @@
             "command": "./node_modules/.bin/rhx route.drive --mode hook",
             "timeout": 5,
             "author": "repo=bhrain/role=driver"
+          },
+          {
+            "type": "command",
+            "command": "./node_modules/.bin/rhachet roles boot --repo ehmpathy --role architect",
+            "timeout": 60,
+            "author": "repo=ehmpathy/role=architect"
           }
         ]
       }
