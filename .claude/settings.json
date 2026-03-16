@@ -33,6 +33,12 @@
             "command": "./node_modules/.bin/rhx route.drive --mode hook",
             "timeout": 5,
             "author": "repo=bhrain/role=driver"
+          },
+          {
+            "type": "command",
+            "command": "./node_modules/.bin/rhachet roles boot --repo ehmpathy --role architect",
+            "timeout": 60,
+            "author": "repo=ehmpathy/role=architect"
           }
         ]
       }
@@ -69,6 +75,12 @@
             "command": "./node_modules/.bin/rhachet run --repo ehmpathy --role mechanic --init claude.hooks/pretooluse.forbid-terms.blocklist",
             "timeout": 5,
             "author": "repo=ehmpathy/role=mechanic"
+          },
+          {
+            "type": "command",
+            "command": "./node_modules/.bin/rhx route.bounce --mode hook",
+            "timeout": 5,
+            "author": "repo=bhrain/role=driver"
           }
         ]
       },
@@ -160,6 +172,8 @@
       "Bash(git cat-file:*)",
       "Bash(git release --watch)",
       "Bash(npx rhachet run --skill sedreplace:*)",
+      "Bash(npx rhachet run --skill sedreplace --old 'oldName' --new 'newName' --glob 'src/**/*.ts')",
+      "Bash(npx rhachet run --skill sedreplace --old 'oldName' --new 'newName' --glob 'src/**/*.ts' --mode apply)",
       "Bash(npx rhachet run --skill cpsafe:*)",
       "Bash(npx rhachet run --skill mvsafe:*)",
       "Bash(npx rhachet run --skill rmsafe:*)",
@@ -173,7 +187,16 @@
       "Bash(echo $MESSAGE | npx rhachet run --skill git.commit.set -m @stdin --mode apply)",
       "Bash(echo $MESSAGE | npx rhachet run --skill git.commit.set -m @stdin --mode apply --push)",
       "Bash(echo $MESSAGE | npx rhachet run --skill git.commit.set -m @stdin --unstaged ignore)",
+      "Bash(echo $MESSAGE | npx rhachet run --skill git.commit.set -m @stdin --unstaged include)",
+      "Bash(rhx git.commit.set:*)",
+      "Bash(echo $MESSAGE | rhx git.commit.set -m @stdin)",
+      "Bash(echo $MESSAGE | rhx git.commit.set -m @stdin --mode apply)",
+      "Bash(echo $MESSAGE | rhx git.commit.set -m @stdin --mode apply --push)",
+      "Bash(echo $MESSAGE | rhx git.commit.set -m @stdin --unstaged ignore)",
+      "Bash(echo $MESSAGE | rhx git.commit.set -m @stdin --unstaged include)",
       "Bash(npx rhachet run --skill git.commit.push:*)",
+      "Bash(rhx keyrack unlock --owner ehmpath --prikey ~/.ssh/ehmpath --env all)",
+      "Bash(npx rhx keyrack unlock --owner ehmpath --prikey ~/.ssh/ehmpath --env all)",
       "Bash(npx rhachet run --skill show.gh.action.logs:*)",
       "Bash(npx rhachet run --skill show.gh.test.errors:*)",
       "Bash(npx rhachet run --skill show.gh.test.errors --scope test-integration)",
@@ -188,6 +211,8 @@
       "Bash(npx rhachet run --skill condense --from 'briefs/**/*.md' --mode apply)",
       "Bash(npx rhachet run:*)",
       "Bash(npx rhachet:*)",
+      "Bash(rhx:*)",
+      "Bash(npx rhx:*)",
       "Bash(npm view:*)",
       "Bash(npm list:*)",
       "Bash(npm remove:*)",
@@ -332,12 +357,16 @@
       "Bash(npx rhachet run --skill git.commit.uses set:*)",
       "Bash(sed:*)",
       "Bash(tee:*)",
+      "Edit(**/.route/**)",
       "Edit(.branch/.bind/*)",
       "Edit(.meter/*)",
+      "Edit(.route/**)",
       "EnterPlanMode",
       "Read(.quarantine/*)",
+      "Write(**/.route/**)",
       "Write(.branch/.bind/*)",
-      "Write(.meter/*)"
+      "Write(.meter/*)",
+      "Write(.route/**)"
     ],
     "ask": [
       "Bash(bash:*)",
