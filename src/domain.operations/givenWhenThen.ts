@@ -215,6 +215,9 @@ given.repeatably =
         criteria: 'SOME',
         anyAttemptPassed: false,
         thisAttemptFailed: false,
+        thisAttemptIndex: 0,
+        allAttemptsQuant: configuration.attempts,
+        anyError: null,
       };
 
       for (const attempt of getNumberRange({
@@ -226,9 +229,10 @@ given.repeatably =
           const path = getDescribePath();
           registryDescribeRepeatable.set(path, state);
 
-          // reset failure flag at start of this attempt's execution (not registration)
+          // reset failure flag and set current attempt at start of this attempt's run
           globals().beforeAll(() => {
             state.thisAttemptFailed = false;
+            state.thisAttemptIndex = attempt;
           });
 
           // mark success after attempt completes without failures
@@ -323,6 +327,9 @@ when.repeatably =
         criteria: 'SOME',
         anyAttemptPassed: false,
         thisAttemptFailed: false,
+        thisAttemptIndex: 0,
+        allAttemptsQuant: configuration.attempts,
+        anyError: null,
       };
 
       for (const attempt of getNumberRange({
@@ -334,9 +341,10 @@ when.repeatably =
           const path = getDescribePath();
           registryDescribeRepeatable.set(path, state);
 
-          // reset failure flag at start of this attempt's execution (not registration)
+          // reset failure flag and set current attempt at start of this attempt's run
           globals().beforeAll(() => {
             state.thisAttemptFailed = false;
+            state.thisAttemptIndex = attempt;
           });
 
           // mark success after attempt completes without failures
@@ -406,7 +414,17 @@ const then: Test = ((...input: TestInput<void>): void => {
           await (testFn as () => Promise<unknown>)();
         } catch (error) {
           repeatableCtx.thisAttemptFailed = true;
-          throw error;
+          // preserve first error for final attempt
+          if (!repeatableCtx.anyError && error instanceof Error) {
+            repeatableCtx.anyError = error;
+          }
+          // only throw on final attempt - earlier failures are retried
+          if (
+            repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant
+          ) {
+            throw repeatableCtx.anyError ?? error;
+          }
+          // else: swallow error, let subsequent attempts try
         }
       }
     });
@@ -429,7 +447,17 @@ const then: Test = ((...input: TestInput<void>): void => {
           await (testFn as () => Promise<unknown>)();
         } catch (error) {
           repeatableCtx.thisAttemptFailed = true;
-          throw error;
+          // preserve first error for final attempt
+          if (!repeatableCtx.anyError && error instanceof Error) {
+            repeatableCtx.anyError = error;
+          }
+          // only throw on final attempt - earlier failures are retried
+          if (
+            repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant
+          ) {
+            throw repeatableCtx.anyError ?? error;
+          }
+          // else: swallow error, let subsequent attempts try
         }
       }
     });
