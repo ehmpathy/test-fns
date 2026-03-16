@@ -37,6 +37,24 @@ export interface RepeatableState {
    * .why = used to determine if this attempt should mark success
    */
   thisAttemptFailed: boolean;
+
+  /**
+   * .what = which attempt number is active now
+   * .why = used to determine if we should throw on failure (only on final attempt)
+   */
+  thisAttemptIndex: number;
+
+  /**
+   * .what = total number of attempts configured
+   * .why = used to determine if current attempt is final
+   */
+  allAttemptsQuant: number;
+
+  /**
+   * .what = error encountered in any failed attempt
+   * .why = preserve error to throw on final attempt if all fail
+   */
+  anyError: Error | null;
 }
 
 /**

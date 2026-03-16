@@ -49,6 +49,35 @@ describe('when.repeatably', () => {
 });
 
 /**
+ * .what = verify that criteria=SOME passes when later attempt succeeds
+ * .why = critical fix: jest should NOT count early attempt failures when a later attempt passes
+ *
+ * @see https://github.com/ehmpathy/test-fns/issues/TBD - repeatably SOME counts failed attempts
+ */
+describe('when.repeatably criteria=SOME early failure recovery', () => {
+  given('a flaky test that fails on attempt 1 but passes on attempt 2', () => {
+    // track which attempts ran
+    const attemptsRan: number[] = [];
+
+    when.repeatably({ attempts: 3, criteria: 'SOME' })(
+      'flaky operation',
+      ({ attempt }) => {
+        then('it eventually passes', () => {
+          attemptsRan.push(attempt);
+          // fail on attempt 1, pass on attempt 2+
+          expect(attempt).toBeGreaterThanOrEqual(2);
+        });
+      },
+    );
+
+    // verify behavior: attempt 1 failed (but didnt throw to jest), attempt 2 passed, attempt 3 skipped
+    afterAll(() => {
+      expect(attemptsRan).toEqual([1, 2]);
+    });
+  });
+});
+
+/**
  * .what = isolated describe block to prove all then blocks run together per attempt
  * .why = verifies N-describe architecture runs complete block per attempt
  */

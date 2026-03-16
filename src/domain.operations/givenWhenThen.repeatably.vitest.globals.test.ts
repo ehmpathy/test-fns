@@ -46,6 +46,31 @@ describe('when.repeatably', () => {
     });
   });
 
+  /**
+   * .what = verify that criteria=SOME passes when later attempt succeeds
+   * .why = critical fix: vitest should NOT count early attempt failures when a later attempt passes
+   */
+  given('criteria = SOME early failure recovery', () => {
+    // track which attempts ran
+    const attemptsRan: number[] = [];
+
+    when.repeatably({ attempts: 3, criteria: 'SOME' })(
+      'flaky operation',
+      ({ attempt }) => {
+        then('it eventually passes', () => {
+          attemptsRan.push(attempt);
+          // fail on attempt 1, pass on attempt 2+
+          expect(attempt).toBeGreaterThanOrEqual(2);
+        });
+      },
+    );
+
+    // verify behavior: attempt 1 failed (but didnt throw), attempt 2 passed, attempt 3 skipped
+    afterAll(() => {
+      expect(attemptsRan).toEqual([1, 2]);
+    });
+  });
+
   given('criteria = SOME with multiple then blocks', () => {
     // track which then blocks execute on which attempts
     const thenAExecutedAttempts: number[] = [];
