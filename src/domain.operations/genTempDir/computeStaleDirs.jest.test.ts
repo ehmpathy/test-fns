@@ -7,9 +7,14 @@ const ONE_HOUR_MS: number = 60 * 60 * 1000;
 describe('computeStaleDirs', () => {
   given('an empty list of directories', () => {
     when('computeStaleDirs is called', () => {
-      then('it returns empty array', () => {
-        const result = computeStaleDirs({ dirs: [], maxAgeMs: ONE_HOUR_MS });
-        expect(result).toEqual([]);
+      then('it returns empty verdicts', () => {
+        const judged = computeStaleDirs({
+          dirs: [],
+          maxAgeMs: ONE_HOUR_MS,
+          now: new Date('2026-01-19T14:00:00.000Z'),
+        });
+        expect(judged.stale).toEqual([]);
+        expect(judged.unreadable).toEqual([]);
       });
     });
   });
@@ -28,25 +33,35 @@ describe('computeStaleDirs', () => {
 
     when('filtered with 1 hour threshold', () => {
       then('it returns directories older than threshold', () => {
-        const result = computeStaleDirs({
-          dirs,
-          maxAgeMs: ONE_HOUR_MS,
-          now,
-        });
+        const judged = computeStaleDirs({ dirs, maxAgeMs: ONE_HOUR_MS, now });
 
-        expect(result).toHaveLength(2);
-        expect(result.map((d) => d.name)).toContain(twoHoursAgo);
-        expect(result.map((d) => d.name)).toContain(fiveHoursAgo);
+        expect(judged.stale).toHaveLength(2);
+        expect(judged.stale.map((d) => d.name)).toContain(twoHoursAgo);
+        expect(judged.stale.map((d) => d.name)).toContain(fiveHoursAgo);
       });
 
       then('it preserves directories newer than threshold', () => {
-        const result = computeStaleDirs({
-          dirs,
+        const judged = computeStaleDirs({ dirs, maxAgeMs: ONE_HOUR_MS, now });
+
+        expect(judged.stale.map((d) => d.name)).not.toContain(thirtyMinsAgo);
+      });
+    });
+  });
+
+  given('a stamped directory name', () => {
+    const now = new Date('2026-01-19T14:00:00.000Z');
+    const stampedOld = '2026-01-19T10-00-00.000Z.r7f3a91c2.my-test.a1b2c3d4';
+
+    when('filtered', () => {
+      then('the run stamp does not blind the age gate', () => {
+        const judged = computeStaleDirs({
+          dirs: [{ name: stampedOld, path: `/tmp/.temp/${stampedOld}` }],
           maxAgeMs: ONE_HOUR_MS,
           now,
         });
 
-        expect(result.map((d) => d.name)).not.toContain(thirtyMinsAgo);
+        expect(judged.stale.map((d) => d.name)).toEqual([stampedOld]);
+        expect(judged.unreadable).toEqual([]);
       });
     });
   });
@@ -64,16 +79,20 @@ describe('computeStaleDirs', () => {
     ];
 
     when('filtered', () => {
-      then('it skips dirs with invalid timestamp format', () => {
-        const result = computeStaleDirs({
-          dirs,
-          maxAgeMs: ONE_HOUR_MS,
-          now,
-        });
+      then('it preserves dirs with invalid timestamp format', () => {
+        const judged = computeStaleDirs({ dirs, maxAgeMs: ONE_HOUR_MS, now });
 
-        // only valid old dir should be returned
-        expect(result).toHaveLength(1);
-        expect(result[0]?.name).toEqual(validOld);
+        // only the valid old dir is a reap candidate
+        expect(judged.stale).toHaveLength(1);
+        expect(judged.stale[0]?.name).toEqual(validOld);
+      });
+
+      then('it REPORTS what it could not read, rather than hide it', () => {
+        const judged = computeStaleDirs({ dirs, maxAgeMs: ONE_HOUR_MS, now });
+
+        expect(judged.unreadable.map((d) => d.name).sort()).toEqual(
+          [anotherInvalid, invalidFormat].sort(),
+        );
       });
     });
   });

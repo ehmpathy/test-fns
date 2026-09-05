@@ -4,6 +4,7 @@
 *.tsbuildinfo
 .artifact
 .env
+.review
 .serverless
 .temp
 .terraform
@@ -15,3 +16,10 @@ dist
 node_modules
 !.test*/**/node_modules
 !.test*/**/node_modules/**
+
+# route review artifacts — process records, never deliverables.
+# `.behavior/**/review/self/.gitignore` and `.behavior/**/.reviews/peer/.gitignore`
+# already declare this convention; the ROOT `review/` exists only because
+# `--as promised` reads `<repo-root>/review/self/` rather than the `.behavior/`
+# path it prints, so the same files land at a second, unignored path.
+review

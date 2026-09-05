@@ -1,0 +1,168 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case1] the subpaths we tell every consumer to paste when: [t0] a consumer writes one into their runner config then: 🔴 and the whole map a consumer meets is shaped as here 1`] = `
+{
+  ".": "./dist/index.js",
+  "./autoprune.setup.jest": "./dist/contract/autoprune.setup.jest.js",
+  "./autoprune.setup.vitest": "./dist/contract/autoprune.setup.vitest.js",
+  "./autoprune.teardown.jest": "./dist/contract/autoprune.teardown.jest.js",
+  "./slowtest.reporter.jest": "./dist/contract/slowtest.reporter.jest.js",
+  "./slowtest.reporter.vitest": "./dist/contract/slowtest.reporter.vitest.js",
+  "./vitest.setup": "./dist/contract/vitest.setup.js",
+}
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case2] the module each subpath points at when: [t2] all three hook modules are read as ONE surface then: 🔴 their shapes read as here 1`] = `
+{
+  "./autoprune.setup.jest": [
+    "default: function",
+  ],
+  "./autoprune.setup.vitest": [
+    "setup: function",
+    "teardown: function",
+  ],
+  "./autoprune.teardown.jest": [
+    "default: function",
+  ],
+  "subpathsOutsideThisClamp": [
+    ".",
+    "./slowtest.reporter.jest",
+    "./slowtest.reporter.vitest",
+    "./vitest.setup",
+  ],
+}
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case3] the readme — the one contract a consumer reads BEFORE our code when: [t0] a consumer reads it to wire the autoprune then: 🔴 and the SECTIONS it publishes read as here 1`] = `
+"### autoprune
+
+wire these into each runner config. **the guarantee is per runner config**, so a repo with
+several configs wires each one.
+
+\`\`\`ts
+// jest.config.ts — TWO keys
+export default {
+  globalSetup: 'test-fns/autoprune.setup.jest',
+  globalTeardown: 'test-fns/autoprune.teardown.jest',
+};
+\`\`\`
+
+\`\`\`ts
+// vitest.config.ts — ONE key; the module exports both setup and teardown
+export default defineConfig({
+  test: { globalSetup: ['test-fns/autoprune.setup.vitest'] },
+});
+\`\`\`
+
+with no hooks wired, \`genTempDir\` behaves exactly as before and prints one notice that
+names the config to fix.
+
+**to keep a run's dirs for inspection**, set \`TEST_FNS_KEEP\`:
+
+\`\`\`sh
+TEST_FNS_KEEP=1 npm test
+\`\`\`
+
+it holds **every** dir the run made — a green run too, since a global teardown is handed
+no test results to filter by — and says where they are. the age gate still reclaims them.
+
+### getOneTempDirRoot
+
+yields the temp root, so a consumer derives the path rather than hardcodes it.
+
+\`\`\`ts
+import { getOneTempDirRoot } from 'test-fns';
+
+const { pathPhysical, pathSymlink } = getOneTempDirRoot();
+// pathPhysical => /tmp/test-fns/{repo}/.temp
+// pathSymlink  => {gitRoot}/.temp/genTempDir.symlink
+\`\`\`
+
+use it to count what a run left behind. **filter through \`isTempDir\`** — the root also
+holds a \`readme.md\` and a \`.gitignore\`, so a raw entry count reads 2 on a pristine root.
+
+### isTempDir
+
+checks if a path is a test directory created by genTempDir.
+
+\`\`\`ts
+import { isTempDir } from 'test-fns';
+
+isTempDir({ path: '/repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
+isTempDir({ path: '/tmp/random' }); // false
+\`\`\`"
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case4] the unhooked NOTICE — the loudest of the three advertisers when: [t0] a consumer with no hooks wired runs their suite then: 🔴 and the SETUP-ABSENT notice reads as here, at a real terminal 1`] = `
+"🧹 test-fns: temp dirs made by genTempDir are never reclaimed here.
+   ├─ at: your jest config (this repo may hold several)
+   ├─ cause: this runner config does not wire the autoprune hooks.
+   ├─ fix (jest): add both keys —
+   │      globalSetup: 'test-fns/autoprune.setup.jest'
+   │      globalTeardown: 'test-fns/autoprune.teardown.jest'
+   ├─ fix (vitest): add the one key —
+   │      globalSetup: ['test-fns/autoprune.setup.vitest']
+   └─ quiet: set TEST_FNS_QUIET=1
+
+"
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case4] the unhooked NOTICE — the loudest of the three advertisers when: [t0] a consumer with no hooks wired runs their suite then: 🔴 and the TEARDOWN-ABSENT notice reads as here, at a real terminal 1`] = `
+"🧹 test-fns: temp dirs will be STAMPED but never reclaimed.
+   ├─ at: your jest config (this repo may hold several)
+   ├─ cause: the autoprune setup is wired, its teardown is not — a half-wired config.
+   └─ fix: add \`globalTeardown: 'test-fns/autoprune.teardown.jest'\`.
+
+"
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case4] the unhooked NOTICE — the loudest of the three advertisers when: [t1] a consumer who has READ the notice suppresses it then: 🔴 it emits NOT ONE BYTE, at a real terminal 1`] = `
+{
+  "setup-absent": "",
+  "teardown-absent": "",
+}
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case5] getOneTempDirRoot — the export the wish itself demanded when: [t0] a consumer calls it from the installed package then: 🔴 and OUTSIDE any git repo it REFUSES, rather than guess 1`] = `
+"UnexpectedCodePathError: getGitRoot called outside of a git repository
+
+{
+  "cwd": "<tmp>"
+}"
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case5] getOneTempDirRoot — the export the wish itself demanded when: [t0] a consumer calls it from the installed package then: 🔴 and the SHAPE it yields reads as here 1`] = `
+{
+  "pathPhysical": "<tmp>/test-fns/<repo>/.temp",
+  "pathSymlink": "<checkouts>/<repo>/.temp/genTempDir.symlink",
+}
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case5b] isTempDir — the export a consumer FILTERS their count through when: [t0] they call it from the installed package then: 🔴 and the GRAMMAR it admits reads as here 1`] = `
+{
+  "a LEGACY name, minted before the run slot existed": true,
+  "a full path to a stamped dir": true,
+  "a name whose hex is too short": false,
+  "a name with no hex at all": false,
+  "a name with no timestamp": false,
+  "a slug shaped like a run id, beside an empty slot": true,
+  "a stamped name, whose run slot holds an id": true,
+  "an unstamped name, whose run slot holds _": true,
+  "the root gitignore the infra writes": false,
+  "the root readme the infra writes": false,
+}
+`;
+
+exports[`autoprune exports (the consumer wire-up seam) given: [case5c] the ONE way genTempDir refuses a consumer — and the one it dropped when: [t0] a consumer trips each one from the installed package then: 🔴 and the OUTCOMES a human reads are shaped as here 1`] = `
+"── MINTS: a slug shaped like a run stamp ──
+MINTED: <ts>._.rdeadbeef.<hex>
+
+── REFUSES: a run id env var that is not a run id ──
+BadRequestError: test-fns: TEST_FNS_RUN is set, but is not a run id
+
+{
+  "TEST_FNS_RUN": "not-a-run-id",
+  "expected": "/^r[a-f0-9]{8}$/i",
+  "hint": "unset TEST_FNS_RUN — the autoprune setup mints it for you at the start of each run, so a value set by hand or left over from an earlier shell will stamp temp dirs that no reclaim can read."
+}"
+`;

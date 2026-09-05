@@ -29,6 +29,11 @@ const config: Config = {
   testMatch: ['**/*.acceptance.jest.test.ts', '!**/.yalc/**'],
   setupFilesAfterEnv: ['./jest.acceptance.env.ts'],
 
+  // reclaim every temp dir this run makes, at the end of this run
+  // .note = jest needs BOTH keys; wire only the setup and dirs are stamped, never taken
+  globalSetup: './src/contract/autoprune.setup.jest.ts',
+  globalTeardown: './src/contract/autoprune.teardown.jest.ts',
+
   // use 50% of threads to leave headroom for other processes
   maxWorkers: '50%', // https://stackoverflow.com/questions/71287710/why-does-jest-run-faster-with-maxworkers-50
 };

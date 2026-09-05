@@ -1,6 +1,6 @@
 import { given, then, when } from '@src/contract';
 
-import { isTempDir } from './genTempDir';
+import { isTempDir } from './isTempDir';
 
 describe('isTempDir', () => {
   given('a path that matches temp dir pattern', () => {

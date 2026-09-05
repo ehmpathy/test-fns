@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getOneTempDirRoot given: a consumer who wants to count the dirs genTempDir makes when: they derive the root, then allocate a dir then: 🔴 and the RECORD of what the export yields is shaped as here — RICHER than its acceptance twin, since this grain alone owns the LIVE view relationship 1`] = `
+{
+  "keys": [
+    "pathPhysical",
+    "pathSymlink",
+  ],
+  "pathPhysical": "<tmp>/test-fns/<repo>/.temp",
+  "pathSymlink": "<checkouts>/<repo>/.temp/genTempDir.symlink",
+  "viewsAreNotInterchangeable": true,
+  "viewsNameOnePlace": true,
+}
+`;

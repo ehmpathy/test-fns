@@ -448,7 +448,8 @@ generates a temporary test directory within the repo's `.temp` folder, with auto
 - portable across os systems (no os-specific temp dir dependencies)
 - timestamp-prefixed names enable age-based cleanup
 - slug in directory name helps identify which test created it
-- auto-prunes directories older than 7 days
+- **autoprune** — wire two config keys and a run reclaims its own dirs at teardown
+- an age gate backstops it at 24h, for whatever a signal or an unwired run leaves
 - optional fixture clone for pre-populated test scenarios
 
 **basic usage:**
@@ -566,19 +567,77 @@ notes:
 **directory format:**
 
 ```
-.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4/
-      └── {timestamp}.{slug}.{8-char-uuid}
+                    {timestamp}.{run}.{slug}.{8-char-uuid}
+
+# with the autoprune hooks wired — the run slot holds this run's id
+.temp/2026-01-19T12-34-56.789Z.r7f3a91c2.my-test.a1b2c3d4/
+
+# with no hooks wired — the run slot holds `_`, which means "no run minted this"
+.temp/2026-01-19T12-34-56.789Z._.my-test.a1b2c3d4/
 ```
 
 the slug helps debuggers identify which test created a directory when they debug.
+the run stamp is what lets a run reclaim exactly its own dirs, and no peer's.
 
 **cleanup behavior:**
 
-directories in `.temp` are automatically pruned when:
-- they are older than 7 days (based on timestamp prefix)
-- `genTempDir()` is called (prune runs in background)
+there are two reclaims, and the first is the one that matters:
 
-the `.temp` directory includes a `readme.md` that explains the ttl policy.
+1. **the run's own teardown** — reclaims every dir THIS run made, at the end of the run.
+   it needs the autoprune hooks (below). it survives a failed test, a `--scope`d run,
+   and a peer run beside it.
+2. **the age gate** — the backstop. it takes entries older than **24 hours**, and it is
+   the only reclaim for a run with no hooks wired, or one killed by a signal.
+
+set `TEST_FNS_MAX_AGE_MS` to widen or narrow the age gate. the `.temp` directory
+includes a `readme.md` that restates this policy where a human finds the dirs.
+
+### autoprune
+
+wire these into each runner config. **the guarantee is per runner config**, so a repo with
+several configs wires each one.
+
+```ts
+// jest.config.ts — TWO keys
+export default {
+  globalSetup: 'test-fns/autoprune.setup.jest',
+  globalTeardown: 'test-fns/autoprune.teardown.jest',
+};
+```
+
+```ts
+// vitest.config.ts — ONE key; the module exports both setup and teardown
+export default defineConfig({
+  test: { globalSetup: ['test-fns/autoprune.setup.vitest'] },
+});
+```
+
+with no hooks wired, `genTempDir` behaves exactly as before and prints one notice that
+names the config to fix.
+
+**to keep a run's dirs for inspection**, set `TEST_FNS_KEEP`:
+
+```sh
+TEST_FNS_KEEP=1 npm test
+```
+
+it holds **every** dir the run made — a green run too, since a global teardown is handed
+no test results to filter by — and says where they are. the age gate still reclaims them.
+
+### getOneTempDirRoot
+
+yields the temp root, so a consumer derives the path rather than hardcodes it.
+
+```ts
+import { getOneTempDirRoot } from 'test-fns';
+
+const { pathPhysical, pathSymlink } = getOneTempDirRoot();
+// pathPhysical => /tmp/test-fns/{repo}/.temp
+// pathSymlink  => {gitRoot}/.temp/genTempDir.symlink
+```
+
+use it to count what a run left behind. **filter through `isTempDir`** — the root also
+holds a `readme.md` and a `.gitignore`, so a raw entry count reads 2 on a pristine root.
 
 ### isTempDir
 

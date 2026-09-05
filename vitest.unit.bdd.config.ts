@@ -14,6 +14,11 @@ export default defineConfig({
     environment: 'node',
     // NOTE: no setupFiles - proves bdd namespace works without globals
     include: ['**/*.vitest.bdd.test.ts'],
+
+    // reclaim every temp dir this run makes, at the end of this run
+    // .note = ONE key. vitest reads setup + teardown from one module, so the
+    //         half-wired state jest can reach is unreachable here
+    globalSetup: ['./src/contract/autoprune.setup.vitest.ts'],
     exclude: ['**/node_modules/**', '**/.yalc/**'],
   },
   resolve: {
