@@ -572,17 +572,34 @@ describe('genTempDir acceptance', () => {
           const repo = path.basename(gitRootAbs);
           const checkouts = path.dirname(gitRootAbs);
 
-          const asStable = (one: string): string =>
-            one
+          // 🔴 .note = the repo mask lands on ONE SEGMENT — the segment that parents
+          //         `.temp` — never on every byte that matches it. the physical view
+          //         reads `<tmp>/test-fns/<repo>/.temp/…`, where `test-fns` is the
+          //         library's own namespace segment. a blanket byte sweep masks BOTH
+          //         wherever a checkout is named for the package it holds, so the
+          //         record reads `<tmp>/<repo>/<repo>/.temp` on that machine and
+          //         `<tmp>/test-fns/<repo>/.temp` everywhere else. a mask derived
+          //         from a value can still collide with a value it was never meant
+          //         to touch, which is this record's own portability claim, met one
+          //         layer up
+          const asStable = (one: string): string => {
+            const segments = one
               .split(checkouts)
               .join('<checkouts>')
               .split(os.tmpdir())
               .join('<tmp>')
-              .split(repo)
-              .join('<repo>')
+              .split(path.sep);
+            return segments
+              .map((segment, index) =>
+                segment === repo && segments[index + 1] === '.temp'
+                  ? '<repo>'
+                  : segment,
+              )
+              .join(path.sep)
               .replace(/\d{4}-\d{2}-\d{2}T[\d-]+\.\d+Z/, '<ts>')
               .replace(/\.r[a-f0-9]{8}\./, '.<run>.')
               .replace(/\.[a-f0-9]{8}$/, '.<hex>');
+          };
 
           const shapeStable = {
             returned: asStable(dir),
@@ -594,10 +611,16 @@ describe('genTempDir acceptance', () => {
           // checkout name in the record, and the snapshot passes here while it
           // fails on every other machine. this is not hypothetical — the first
           // render of THIS export leaked `<home>/git/ehmpathy/_worktrees`
+          //
+          // .note = the repo claim names the SEGMENT, `/<repo>/.temp`, rather than
+          //         the bare name. a bare `not.toContain(repo)` reads red on a
+          //         checkout named `test-fns`, where the namespace segment carries
+          //         those same bytes and is meant to survive the mask
+          const parentOfTemp = `${path.sep}${repo}${path.sep}.temp`;
           expect(shapeStable.returned).not.toContain(os.homedir());
           expect(shapeStable.resolved).not.toContain(os.homedir());
-          expect(shapeStable.returned).not.toContain(repo);
-          expect(shapeStable.resolved).not.toContain(repo);
+          expect(shapeStable.returned).not.toContain(parentOfTemp);
+          expect(shapeStable.resolved).not.toContain(parentOfTemp);
 
           expect(shapeStable).toMatchSnapshot();
         },

@@ -97,19 +97,37 @@ describe('getOneTempDirRoot', () => {
           // .note = the mask parts are DERIVED from the values, never hardcoded.
           //         a hardcoded worktree name is the same non-portability defect
           //         one layer down, and it passes on the machine that wrote it
+          //
+          // 🔴 .note = the repo mask lands on ONE SEGMENT — the segment that parents
+          //         `.temp` — never on every byte that matches it. the physical root
+          //         reads `<tmp>/test-fns/<repo>/.temp`, where `test-fns` is the
+          //         library's own namespace segment. a blanket byte sweep masks BOTH
+          //         wherever a checkout is named for the package it holds, so the
+          //         record reads `<tmp>/<repo>/<repo>/.temp` on that machine and
+          //         `<tmp>/test-fns/<repo>/.temp` everywhere else. that is the very
+          //         non-portability this mask exists to end, met one layer up:
+          //         a mask derived from a value can still collide with a value it
+          //         was never meant to touch
           const repo = path.basename(path.dirname(scene.root.pathPhysical));
           const checkouts = path.dirname(
             scene.root.pathSymlink.split(`${path.sep}.temp${path.sep}`)[0] ??
               scene.root.pathSymlink,
           );
-          const asStable = (one: string): string =>
-            one
+          const asStable = (one: string): string => {
+            const segments = one
               .split(checkouts)
               .join('<checkouts>')
               .split(os.tmpdir())
               .join('<tmp>')
-              .split(repo)
-              .join('<repo>');
+              .split(path.sep);
+            return segments
+              .map((segment, index) =>
+                segment === repo && segments[index + 1] === '.temp'
+                  ? '<repo>'
+                  : segment,
+              )
+              .join(path.sep);
+          };
 
           const shapeStable = {
             pathPhysical: asStable(scene.root.pathPhysical),
@@ -125,10 +143,16 @@ describe('getOneTempDirRoot', () => {
           // the guard's guard: a mask that failed to fire would leave a home dir
           // or a worktree name in the record, and the snapshot would pass here
           // and fail on every other machine
+          //
+          // .note = the repo claim names the SEGMENT, `/<repo>/.temp`, rather than
+          //         the bare name. a bare `not.toContain(repo)` reads red on a
+          //         checkout named `test-fns`, where the namespace segment carries
+          //         those same bytes and is meant to survive the mask
+          const parentOfTemp = `${path.sep}${repo}${path.sep}.temp`;
           expect(shapeStable.pathPhysical).not.toContain(os.homedir());
           expect(shapeStable.pathSymlink).not.toContain(os.homedir());
-          expect(shapeStable.pathPhysical).not.toContain(repo);
-          expect(shapeStable.pathSymlink).not.toContain(repo);
+          expect(shapeStable.pathPhysical).not.toContain(parentOfTemp);
+          expect(shapeStable.pathSymlink).not.toContain(parentOfTemp);
 
           expect(shapeStable).toMatchSnapshot();
         },
