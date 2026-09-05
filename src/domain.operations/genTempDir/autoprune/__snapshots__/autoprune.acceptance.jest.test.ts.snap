@@ -1,0 +1,307 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`autoprune (J1 — the clamp that bites) given: [case1] a wired run that allocates temp dirs, nested in our own when: [t0] the run completes its full setup → allocate → teardown then: 🔴 and the SHAPE of the verdict it renders is as here 1`] = `
+[
+  "run: string",
+  "runInherited: string",
+  "countMade: number",
+  "countLeft: number",
+  "pathPhysical: string",
+]
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case2] a run whose tests FAILED when: [t0] the teardown fires after the failure then: and the VERDICT the child renders is shaped as here 1`] = `
+{
+  "countLeft": 0,
+  "countMade": 3,
+  "failed": true,
+  "namesLeft": [],
+  "run": "<run>",
+}
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case3] a run that allocated ZERO dirs — a zero-match scope when: [t0] the teardown fires with no dir of its own then: and the VERDICT the child renders is shaped as here 1`] = `
+{
+  "countLeft": 0,
+  "countMade": 0,
+  "failed": false,
+  "namesLeft": [],
+  "run": "<run>",
+}
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case4] what a real run WRITES TO STDERR, end to end when: [t1] the same run, with the hold hatch ON then: 🔴 the hold message REACHES a human, whole and unaltered 1`] = `
+"🧹 test-fns: TEST_FNS_KEEP is set, so this run KEPT ALL of its temp dirs.
+   ├─ at: <tmpDir>
+   ├─ run: <run>
+   ├─ scope: every dir this run made — a green run holds them too, since a
+   │         global teardown is handed no test results to filter by.
+   ├─ they are reclaimed by the age gate after 86400000ms (24h) — widen
+   │  that window with TEST_FNS_MAX_AGE_MS, in ms.
+   └─ done with them? remove this run's, and no peer's:
+        rm -rf "<tmpDir>"/*.<run>.*
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case5] an UNHOOKED consumer — every repo on release day when: [t0] the runner config wires neither hook then: 🔴 the notice REACHES a human, whole and unaltered 1`] = `
+"🧹 test-fns: temp dirs made by genTempDir are never reclaimed here.
+   ├─ at: your jest config (this repo may hold several)
+   ├─ cause: this runner config does not wire the autoprune hooks.
+   ├─ fix (jest): add both keys —
+   │      globalSetup: 'test-fns/autoprune.setup.jest'
+   │      globalTeardown: 'test-fns/autoprune.teardown.jest'
+   ├─ fix (vitest): add the one key —
+   │      globalSetup: ['test-fns/autoprune.setup.vitest']
+   └─ quiet: set TEST_FNS_QUIET=1
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case5] an UNHOOKED consumer — every repo on release day when: [t1] the runner was invoked with an explicit --config then: and what the --config consumer reads is shaped as here — the ONE variant this repo itself runs 1`] = `
+"🧹 test-fns: temp dirs made by genTempDir are never reclaimed here.
+   ├─ at: ./jest.unit.config.ts
+   ├─ cause: this runner config does not wire the autoprune hooks.
+   ├─ fix (jest): add both keys —
+   │      globalSetup: 'test-fns/autoprune.setup.jest'
+   │      globalTeardown: 'test-fns/autoprune.teardown.jest'
+   ├─ fix (vitest): add the one key —
+   │      globalSetup: ['test-fns/autoprune.setup.vitest']
+   └─ quiet: set TEST_FNS_QUIET=1
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case6] a VITEST consumer — the other runner contract we ship when: [t0] they wire the one key and run setup → allocate → teardown then: and the VERDICT it renders is shaped as here 1`] = `
+{
+  "countLeft": 0,
+  "countMade": 3,
+  "run": "<run>",
+  "shape": [
+    "run: string",
+    "countMade: number",
+    "countLeft: number",
+    "teardownWired: boolean",
+    "pathPhysical: string",
+  ],
+  "teardownWired": true,
+}
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case6] a VITEST consumer — the other runner contract we ship when: [t1] their suite FAILS, and the teardown runs anyway then: and the VERDICT it renders is shaped as here 1`] = `
+{
+  "countLeft": 0,
+  "countMade": 3,
+  "failed": true,
+  "namesLeftCount": 0,
+  "shape": [
+    "failed: boolean",
+    "countMade: number",
+    "countLeft: number",
+    "namesLeft: object",
+  ],
+}
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case7] a run PRE-EMPTED, then the next run starts when: [t0] the next run speaks its arrears to a real terminal then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runA> — pid <pid> (gone), began <ts>
+   │  ├─ 1 temp dir still on disk with its stamp
+   │  └─ its teardown never ran
+   ├─ cause: a class of pre-emption — a signal, a CI hard timeout, an OOM, or
+   │         a throw inside the global setup or teardown. it got no second write.
+   └─ fix: no fix is owed if you interrupted that run on purpose. if it ended
+           on its own, check the runner logs at that timestamp — the residue
+           itself is bounded by the age gate.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case8] a config wired TEARDOWN-ONLY — the mirror half-wire when: [t0] the teardown hook runs with no setup before it then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: the autoprune TEARDOWN ran, but its SETUP did not.
+   ├─ at: your jest config (this repo may hold several)
+   ├─ cause: the autoprune teardown is wired, its setup is not — a half-wired config.
+   └─ fix: add \`globalSetup: 'test-fns/autoprune.setup.jest'\`.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case9] a VITEST consumer who meets a pre-empted run when: [t0] the vitest setup speaks its arrears to a real terminal then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runA> — pid <pid> (gone), began <ts>
+   │  ├─ 1 temp dir still on disk with its stamp
+   │  └─ its teardown never ran
+   ├─ cause: a class of pre-emption — a signal, a CI hard timeout, an OOM, or
+   │         a throw inside the global setup or teardown. it got no second write.
+   └─ fix: no fix is owed if you interrupted that run on purpose. if it ended
+           on its own, check the runner logs at that timestamp — the residue
+           itself is bounded by the age gate.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case10] a run whose teardown meets a dir it CANNOT remove when: [t0] the reclaim reports its residue to a real terminal then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: this run could not reclaim 1 temp dir it made.
+   ├─ EACCES: <tmpDir>/<ts>.<run>.acc-residue-stuck.<hex>
+   └─ fix: remove it by hand. the age gate reclaims it meanwhile.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case11] a contained root the AGE GATE cannot fully clear when: [t0] a real setup runs its gate pass and speaks what it found then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: the temp-dir age gate could not reclaim 1 aged entry.
+   ├─ EACCES: <tmpDir>/<ts>.acc-gate-stale.a1b2c3d4
+   └─ fix: remove it by hand, or widen access to it.
+
+🧹 test-fns: 1 temp-dir name could not be read, so the age gate preserved it.
+   ├─ acc-gate-unreadable-name
+   └─ fix: remove it by hand — no mechanism will ever reclaim it, at <tmpDir>.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case12] a run marker TORN mid-write, which no run can parse when: [t0] the next run says what it could not judge then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: 1 run marker could not be read, so no run's fate could be judged from it.
+   ├─ unparseable: run.<run>.marker.json
+   └─ fix: remove it by hand — a torn write names no run, and no access change can mend it, at <tmpDir>.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case13] a prior run wired SETUP-ONLY, met by the next run when: [t0] the next run names that cause at a real terminal then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runA> — pid <pid> (gone), began <ts>
+   │  ├─ 1 temp dir still on disk with its stamp
+   │  └─ its teardown never ran
+   ├─ cause: that run had NO globalTeardown wired — a half-wired config.
+   └─ fix: add the autoprune teardown to that runner config.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case14] a run whose MINT CHAIN broke, met by the next run when: [t0] the broken chain is caught, and the next run says so then: and what run A leaves a human is shaped as here — ONE trailing newline, never two, since a throw is the last word the process speaks and has no successor to be separated from 1`] = `
+"💥 MalfunctionError: test-fns: the temp-dir run stamp never reached the workers that allocated dirs
+   ├─ run: <runA> — matched 0 of its own dirs
+   ├─ orphan: <ts>._.acc-chain-broken.<hex>
+   ├─ node: <version>
+   ├─ runner: jest@<version>
+   ├─ cause: dirs landed UNSTAMPED, so the run-scoped reclaim would match
+   │         zero and the leak would resume under a green suite. the run id
+   │         rides process.env from the global setup down to the workers;
+   │         a runner upgrade may have broken that handoff.
+   └─ fix: report this with the node and runner versions named above.
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case14] a run whose MINT CHAIN broke, met by the next run when: [t0] the broken chain is caught, and the next run says so then: and what run B leaves a human is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runA> — pid <pid> (gone), began <ts>
+   │  ├─ 0 temp dirs still on disk with its stamp
+   │  │  └─ zero means it made none, OR its stamp never reached its
+   │  │     workers — an unstamped dir counts to no run. check the dir.
+   │  └─ its teardown BEGAN but did not finish
+   ├─ cause: a class of pre-emption — a signal, a CI hard timeout, an OOM, or
+   │         a throw inside the global setup or teardown. it got no second write.
+   └─ fix: no fix is owed if you interrupted that run on purpose. if it ended
+           on its own, check the runner logs at that timestamp — the residue
+           itself is bounded by the age gate.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case15] a run PRE-EMPTED after its teardown met residue when: [t0] the next run speaks the residue that run could not then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runA> — pid <pid> (gone), began <ts>
+   │  ├─ 1 temp dir still on disk with its stamp
+   │  └─ its teardown BEGAN and met residue it could not remove
+   │     └─ EACCES: <tmpDir>/<ts>.<runA>.acc-arrears-residue-stuck.<hex>
+   ├─ cause: a class of pre-emption — a signal, a CI hard timeout, an OOM, or
+   │         a throw inside the global setup or teardown. it got no second write.
+   └─ fix: no fix is owed if you interrupted that run on purpose. if it ended
+           on its own, check the runner logs at that timestamp — the residue
+           itself is bounded by the age gate.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case16] a contained root the AGE GATE cannot even READ when: [t0] an unhooked consumer allocates against it then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: temp dirs made by genTempDir are never reclaimed here.
+   ├─ at: your jest config (this repo may hold several)
+   ├─ cause: this runner config does not wire the autoprune hooks.
+   ├─ fix (jest): add both keys —
+   │      globalSetup: 'test-fns/autoprune.setup.jest'
+   │      globalTeardown: 'test-fns/autoprune.teardown.jest'
+   ├─ fix (vitest): add the one key —
+   │      globalSetup: ['test-fns/autoprune.setup.vitest']
+   └─ quiet: set TEST_FNS_QUIET=1
+
+🧹 test-fns: the temp-dir age gate failed to run over <tmpDir>.
+   ├─ cause: Error: EACCES: <strerror>, scandir '<tmpDir>'
+   ├─ fix: restore access to that path, or remove it — we remake it.
+   └─ until then temp dirs accrue there, reclaimed by no mechanism.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case17] five ownership classes in ONE room — the friday afternoon when: [t0] a run is PRE-EMPTED beside a LIVE peer, their markers seconds apart then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runPre> — pid <pid> (gone), began <ts>
+   │  ├─ 2 temp dirs still on disk with its stamp
+   │  └─ its teardown never ran
+   ├─ cause: a class of pre-emption — a signal, a CI hard timeout, an OOM, or
+   │         a throw inside the global setup or teardown. it got no second write.
+   └─ fix: no fix is owed if you interrupted that run on purpose. if it ended
+           on its own, check the runner logs at that timestamp — the residue
+           itself is bounded by the age gate.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case17] five ownership classes in ONE room — the friday afternoon when: [t1] one residue, and two later runs that meet it in turn then: and what the FIRST run leaves a human is shaped as here 1`] = `
+"🧹 test-fns: 1 prior test run never reclaimed its temp dirs.
+   ├─ run: <runResidue> — pid <pid> (gone), began <ts>
+   │  ├─ 2 temp dirs still on disk with its stamp
+   │  └─ its teardown never ran
+   ├─ cause: a class of pre-emption — a signal, a CI hard timeout, an OOM, or
+   │         a throw inside the global setup or teardown. it got no second write.
+   └─ fix: no fix is owed if you interrupted that run on purpose. if it ended
+           on its own, check the runner logs at that timestamp — the residue
+           itself is bounded by the age gate.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case17] five ownership classes in ONE room — the friday afternoon when: [t1] one residue, and two later runs that meet it in turn then: and what the LATER run leaves a human is shaped as here — the silence, on the record 1`] = `
+{
+  "countDirsResidue": 2,
+  "pidResidueAlive": false,
+  "reportedAtMoved": false,
+  "spoken": "",
+  "stateResidue": "open",
+}
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case17] five ownership classes in ONE room — the friday afternoon when: [t2] one age-gate pass, THREE verdicts over one dir then: and what a human reads is shaped as here 1`] = `
+"🧹 test-fns: the temp-dir age gate could not reclaim 1 aged entry.
+   ├─ EACCES: <tmpDir>/<ts>.acc-friday-sealed.<hex>
+   └─ fix: remove it by hand, or widen access to it.
+
+"
+`;
+
+exports[`autoprune (J1 — the clamp that bites) given: [case18] an adopter RETIRES the teardown they hand-rolled, and loses no guarantee when: [t0] the three arms are driven then: and the three verdicts read as here 1`] = `
+{
+  "hand-roll PRESENT, hooks WIRED": {
+    "left": 0,
+    "made": 3,
+  },
+  "hand-roll RETIRED, hooks ABSENT": {
+    "left": 3,
+    "made": 3,
+  },
+  "hand-roll RETIRED, hooks WIRED": {
+    "left": 0,
+    "made": 3,
+  },
+}
+`;

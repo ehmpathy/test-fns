@@ -12,6 +12,11 @@ export default defineConfig({
     globals: true, // inject describe/test/etc into globalThis for library detection
     environment: 'node',
     setupFiles: ['./src/contract/vitest.setup.ts'],
+
+    // reclaim every temp dir this run makes, at the end of this run
+    // .note = ONE key. vitest reads setup + teardown from one module, so the
+    //         half-wired state jest can reach is unreachable here
+    globalSetup: ['./src/contract/autoprune.setup.vitest.ts'],
     include: [
       '**/*.vitest.test.ts',
       '**/*.vitest.globals.test.ts', // globals path tests

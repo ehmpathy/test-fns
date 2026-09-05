@@ -7,6 +7,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { asExplicitGitOptions, type GitOptions } from './asExplicitGitOptions';
 import { computeTempDirName } from './computeTempDirName';
+import { getOneRunId } from './getOneRunId';
+import { isOwnRunMinted } from './isOwnRunMinted';
+import { warnIfUnhooked } from './warnIfUnhooked';
 
 /**
  * .what = creates an ephemeral temp directory with optional fixture clone, symlinks, and git init
@@ -22,8 +25,25 @@ export const genEphemeralTempDir = (input: {
   tempInfra: { pathPhysical: string };
   gitRoot: string;
 }): string => {
-  // compute unique directory name
-  const dirName = computeTempDirName({ slug: input.slug });
+  // the run stamp is read HERE, at the allocation, never handed down by a caller
+  // .why = the guarantee must live with the allocation, so no call site can forget.
+  //        a caller-supplied stamp leaks unstamped dirs from every caller that is
+  //        not genTempDir — which our own suite proved within an hour of the wire-up
+  const run = getOneRunId();
+  // 🔴 an absent id has TWO causes, and only one of them is the consumer's fault:
+  //
+  //    genuinely unhooked  → their config wants the two keys. say so
+  //    a BROKEN MINT CHAIN → our setup ran and the id did not arrive. OURS
+  //
+  // by env those states are identical, so this notice fired on both — and told a
+  // wired consumer to add config they had already added, for a defect of ours.
+  // `isOwnRunMinted` reads the disk, which CAN tell them apart, and the broken
+  // chain already has its own loud, correct report at the teardown
+  if (!run && !isOwnRunMinted({ tmpDir: input.tempInfra.pathPhysical }))
+    warnIfUnhooked({ reason: 'setup-absent' });
+
+  // compute unique directory name (throws if it does not parse back)
+  const dirName = computeTempDirName({ slug: input.slug, run });
 
   // create the temp directory at physical path
   const tempDir = path.join(input.tempInfra.pathPhysical, dirName);
@@ -63,7 +83,7 @@ export const genEphemeralTempDir = (input: {
     input.clone ||
     (input.symlink && input.symlink.length > 0)
   );
-  if (gitOptions && gitOptions.commits.fixture && hasContent) {
+  if (gitOptions?.commits.fixture && hasContent) {
     commitGitChanges({ dir: tempDir, message: 'fixture' });
   }
 

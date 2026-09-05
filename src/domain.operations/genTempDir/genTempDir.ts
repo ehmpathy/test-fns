@@ -6,27 +6,6 @@ import { genEphemeralTempDir } from './genEphemeralTempDir';
 import { pruneStaleOnce } from './pruneStale';
 
 /**
- * regex pattern that matches temp directory names
- * format: {isoTimestamp}.{slug}.{8-char-hex-uuid}
- */
-const TEMP_DIR_PATTERN =
-  /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{3}Z\..+\.[a-f0-9]{8}$/i;
-
-/**
- * .what = checks if a path is a temp directory created by genTempDir
- * .why = enables validation and identification of temp directories
- *
- * @example
- * isTempDir({ path: '/repo/.temp/genTempDir.symlink/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
- * isTempDir({ path: '/tmp/test-fns/my-repo/.temp/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4' }); // true
- * isTempDir({ path: '/tmp/random' }); // false
- */
-export const isTempDir = (input: { path: string }): boolean => {
-  const dirName = path.basename(input.path);
-  return TEMP_DIR_PATTERN.test(dirName);
-};
-
-/**
  * .what = generates a temporary directory isolated from gitroot module resolution
  * .why = provides portable temp directory creation with automatic cleanup
  *
@@ -35,8 +14,14 @@ export const isTempDir = (input: { path: string }): boolean => {
  * @example
  * // basic usage - empty dir
  * const dir = genTempDir({ slug: 'my-test' });
- * // => /path/to/repo/.temp/genTempDir.symlink/2026-01-19T12-34-56.789Z.my-test.a1b2c3d4
+ * // => /path/to/repo/.temp/genTempDir.symlink/2026-01-19T12-34-56.789Z.r7f3a91c2.my-test.a1b2c3d4
+ * //                                           └── when ───────────┘ └ whose ┘ └ what ┘ └ which ┘
  * // (physical files at /tmp/test-fns/{repo}/.temp/...)
+ * //
+ * // .note = `r7f3a91c2` is THIS RUN's id, and it is what lets the run's own
+ * //         teardown reclaim exactly its own dirs and no peer's. an UNHOOKED run
+ * //         mints no id, so its names carry three segments rather than four —
+ * //         both shapes are admitted by isTempDir, which is the filter to count with
  *
  * @example
  * // with fixture clone
@@ -75,7 +60,9 @@ export const isTempDir = (input: { path: string }): boolean => {
  * @note
  * - physical files stored at /tmp/test-fns/{repo}/.temp/ (isolated from node_modules)
  * - symlink at @gitroot/.temp/genTempDir.symlink/ for discoverability
- * - directories are auto-pruned after 7 days
+ * - a run that wires the autoprune hooks reclaims its OWN dirs at its teardown
+ * - the age gate is the BACKSTOP, at 24h by default (TEST_FNS_MAX_AGE_MS to change)
+ * - a run with no hooks wired gets the age gate alone, plus a one-time notice
  * - timestamp prefix enables age-based cleanup without stat calls
  * - slug helps debuggers identify which test created the directory
  * - git: true initializes a git repo with repo-local user config (ci-safe)
@@ -103,10 +90,11 @@ export const genTempDir = (input: {
   // ensure isolated temp infrastructure exists
   const tempInfra = genIsolatedTempInfra({ gitRoot });
 
-  // trigger background prune (max once per process)
+  // the age gate. unconditional — `pruneStaleOnce` owns the skip, keyed on a
+  // stamp of the sweep itself (`rule.require.fewer-paths-via-idempotency`)
   void pruneStaleOnce({ tmpDir: tempInfra.pathPhysical });
 
-  // create ephemeral temp directory
+  // create ephemeral temp directory; it stamps itself with this run's id
   const dirName = genEphemeralTempDir({
     slug: input.slug,
     clone: input.clone,

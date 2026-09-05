@@ -14,6 +14,25 @@ describe('genEphemeralTempDir', () => {
   // ensure infra exists before tests
   const tempInfra = useBeforeAll(async () => genIsolatedTempInfra({ gitRoot }));
 
+  /**
+   * .what = yields the NAME of a fixture dir that this run's reclaim owns
+   * .why = 🔴 these fixtures were hand-named `.test-fixture-*` and placed directly
+   *        in the shared temp root. that name matches NO reclaim filter — the dir
+   *        passes cannot parse it, the marker pass skips it, and the run reclaim
+   *        sees no run id — so every one of them was IMMORTAL, and the library's
+   *        own suite accrued five permanent dirs per checkout while it tested the
+   *        behavior whose entire wish is that no entry outlive its run
+   *
+   * .note = a stamped name puts them under the run reclaim by construction, which
+   *         also makes this suite dogfood the mechanism it is here to verify
+   */
+  const genFixtureName = (input: { slug: string }): string =>
+    genEphemeralTempDir({
+      slug: `fixture-${input.slug}`,
+      tempInfra: { pathPhysical: tempInfra.pathPhysical },
+      gitRoot,
+    });
+
   given('[case1] basic usage with slug only', () => {
     when('[t0] genEphemeralTempDir is called', () => {
       then('it returns a directory name with timestamp prefix', () => {
@@ -22,9 +41,24 @@ describe('genEphemeralTempDir', () => {
           tempInfra: { pathPhysical: tempInfra.pathPhysical },
           gitRoot,
         });
-        expect(dirName).toMatch(
-          /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{3}Z\.basic-test\.[a-f0-9]{8}$/i,
-        );
+        // .what = the name is <ts>.<run>?.<slug>.<hex> — the run segment present
+        //         under the autoprune hooks (as here) and absent for an unhooked
+        //         consumer, so the group is optional rather than free text
+        // .note = 🔴 this pattern read `\..*basic-test\.` for one round. that admits
+        //         ANY middle segment — `Z.total.garbage.basic-test.a1b2c3d4` passes
+        //         it — so a stamp minted in the wrong shape would have kept this
+        //         test green. the original asserted an EXACT shape; only the run
+        //         segment was meant to become optional, never the whole segment
+        const SHAPE =
+          /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{3}Z\.(r[a-f0-9]{8}\.)?basic-test\.[a-f0-9]{8}$/i;
+        expect(dirName).toMatch(SHAPE);
+
+        // guard the guard: the pattern REJECTS a middle segment that is not a run
+        // stamp. without this line a re-widened pattern is invisible — a `.*` reads
+        // identically at the call site and passes every name this test ever sees
+        expect(
+          '2026-01-19T12-34-56.789Z.total.garbage.basic-test.a1b2c3d4',
+        ).not.toMatch(SHAPE);
       });
 
       then('directory exists at physical path', () => {
@@ -56,7 +90,7 @@ describe('genEphemeralTempDir', () => {
         // setup fixture inline
         const fixturePath = path.join(
           tempInfra.pathPhysical,
-          '.test-fixture-clone',
+          genFixtureName({ slug: 'clone' }),
         );
         fs.mkdirSync(fixturePath, { recursive: true });
         fs.writeFileSync(path.join(fixturePath, 'file1.txt'), 'content1');
@@ -83,7 +117,7 @@ describe('genEphemeralTempDir', () => {
         // setup fixture inline
         const fixturePath = path.join(
           tempInfra.pathPhysical,
-          '.test-fixture-subdir',
+          genFixtureName({ slug: 'subdir' }),
         );
         fs.mkdirSync(fixturePath, { recursive: true });
         fs.writeFileSync(path.join(fixturePath, 'file1.txt'), 'content1');
@@ -218,7 +252,7 @@ describe('genEphemeralTempDir', () => {
         // setup fixture
         const fixturePath = path.join(
           tempInfra.pathPhysical,
-          '.test-fixture-git',
+          genFixtureName({ slug: 'git' }),
         );
         fs.mkdirSync(fixturePath, { recursive: true });
         fs.writeFileSync(path.join(fixturePath, 'file.txt'), 'content');
@@ -244,7 +278,7 @@ describe('genEphemeralTempDir', () => {
         // setup fixture
         const fixturePath = path.join(
           tempInfra.pathPhysical,
-          '.test-fixture-clean',
+          genFixtureName({ slug: 'clean' }),
         );
         fs.mkdirSync(fixturePath, { recursive: true });
         fs.writeFileSync(path.join(fixturePath, 'file.txt'), 'content');
@@ -295,7 +329,7 @@ describe('genEphemeralTempDir', () => {
         // setup fixture
         const fixturePath = path.join(
           tempInfra.pathPhysical,
-          '.test-fixture-no-fixture',
+          genFixtureName({ slug: 'no-fixture' }),
         );
         fs.mkdirSync(fixturePath, { recursive: true });
         fs.writeFileSync(path.join(fixturePath, 'file.txt'), 'content');

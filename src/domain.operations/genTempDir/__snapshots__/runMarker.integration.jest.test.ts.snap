@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`runMarker given: a run id no mint could ever produce when: it is handed to setRunMarker then: 🔴 and the WHOLE message a human reads is shaped as here 1`] = `
+"UnexpectedCodePathError: test-fns: asked to write a run marker whose run id no mint could produce
+
+{
+  "run": "rhalfwire",
+  "hint": "a run id must match r[a-f0-9]{8}"
+}"
+`;

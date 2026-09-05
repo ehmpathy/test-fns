@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { computeIsolatedTempBasePath } from './computeIsolatedTempBasePath';
 import { findsertFile } from './findsertFile';
 import { findsertSymlink } from './findsertSymlink';
+import { upsertFile } from './upsertFile';
 
 const TEMP_README_CONTENT = `# genTempDir.symlink
 
@@ -17,9 +18,19 @@ this prevents upward module resolution from discovery of gitroot dependencies.
 
 ## cleanup policy
 
-- directories older than 7 days are automatically pruned
-- prune occurs in the background when \`genTempDir()\` is called
-- directory names are prefixed with timestamps for age-based cleanup
+the policy is a run's own teardown; the age gate is only the backstop.
+
+- **the policy** — each test run stamps its dirs with a run id, and the runner's own
+  \`globalTeardown\` reclaims exactly those, within the run. wire it with:
+  - jest: \`globalSetup: 'test-fns/autoprune.setup.jest'\` + \`globalTeardown: 'test-fns/autoprune.teardown.jest'\`
+  - vitest: \`globalSetup: ['test-fns/autoprune.setup.vitest']\`
+- **the backstop** — directories older than 24 hours are pruned, to catch what a
+  signal, an OOM, or an unwired runner leaves behind. widen it with \`TEST_FNS_MAX_AGE_MS\`
+- **the hold hatch** — set \`TEST_FNS_KEEP\` to keep a run's dirs for inspection
+- **the unwired fallback** — the backstop also fires in the background when
+  \`genTempDir()\` is called, which is the only reclaim an unwired consumer has
+- **the dir name** — shaped \`{timestamp}.{run}.{slug}.{8-char-uuid}\`. the timestamp
+  is what the backstop reads, and the run stamp is what a run's own teardown matches
 
 ## safe to delete
 
@@ -57,8 +68,11 @@ export const genIsolatedTempInfra = (input: {
   // ensure physical dir exists: /tmp/test-fns/{repo-dirname}/.temp/
   fs.mkdirSync(pathPhysical, { recursive: true });
 
-  // findsert readme.md to physical dir
-  findsertFile({
+  // upsert readme.md to physical dir
+  // .note = UPSERT, never findsert. this doc's content changes whenever we change
+  //         it, so a findsert would THROW on every consumer whose temp root
+  //         predates the upgrade — deep inside their own test, on a readme edit
+  upsertFile({
     path: path.join(pathPhysical, 'readme.md'),
     content: TEMP_README_CONTENT,
   });

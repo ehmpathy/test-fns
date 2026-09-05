@@ -1,0 +1,88 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genTempDir acceptance given: [case0] the reclaim this suite deleted its own teardown to rely on when: [t0] a maintainer reads the config this suite runs under then: 🔴 and the wire-up it declares reads as here 1`] = `
+"globalSetup: './src/contract/autoprune.setup.jest.ts',
+globalTeardown: './src/contract/autoprune.teardown.jest.ts',"
+`;
+
+exports[`genTempDir acceptance given: [case1] a test that needs a temporary directory when: [t2] we read the NAME it gave that directory then: 🔴 the shape a human reads in failure output is as here 1`] = `"<ts>.<run>.name-shape.<hex>"`;
+
+exports[`genTempDir acceptance given: [case2] a test that needs a pre-populated directory when: [t0] genTempDir is called with { slug, clone: "path/to/fixture" } then: 🔴 and the TREE it produced reads as here 1`] = `
+[
+  "config.json",
+  "nested",
+  "nested/data.txt",
+]
+`;
+
+exports[`genTempDir acceptance given: [case2] a test that needs a pre-populated directory when: [t1] genTempDir is called with a clone path that does not exist then: 🔴 and the MESSAGE a human reads is as here 1`] = `
+"BadRequestError: fixture path not found: /non/existent/fixture/path
+
+{
+  "from": "/non/existent/fixture/path",
+  "to": "<tempRoot>/<ts>.<run>.clone-shape.<hex>"
+}"
+`;
+
+exports[`genTempDir acceptance given: [case3] the .temp directory does not yet exist at gitroot when: [t0] genTempDir is called then: 🔴 and the WHOLE doc a consumer finds in their own temp root reads as here 1`] = `
+"# genTempDir.symlink
+
+this directory is a symlink to the physical temp directory at \`/tmp/test-fns/{repo}/.temp/\`.
+
+## why a symlink?
+
+physical temp directories are stored in \`/tmp/\` to isolate them from the repo's \`node_modules\` and \`package.json\`.
+this prevents upward module resolution from discovery of gitroot dependencies.
+
+## cleanup policy
+
+the policy is a run's own teardown; the age gate is only the backstop.
+
+- **the policy** — each test run stamps its dirs with a run id, and the runner's own
+  \`globalTeardown\` reclaims exactly those, within the run. wire it with:
+  - jest: \`globalSetup: 'test-fns/autoprune.setup.jest'\` + \`globalTeardown: 'test-fns/autoprune.teardown.jest'\`
+  - vitest: \`globalSetup: ['test-fns/autoprune.setup.vitest']\`
+- **the backstop** — directories older than 24 hours are pruned, to catch what a
+  signal, an OOM, or an unwired runner leaves behind. widen it with \`TEST_FNS_MAX_AGE_MS\`
+- **the hold hatch** — set \`TEST_FNS_KEEP\` to keep a run's dirs for inspection
+- **the unwired fallback** — the backstop also fires in the background when
+  \`genTempDir()\` is called, which is the only reclaim an unwired consumer has
+- **the dir name** — shaped \`{timestamp}.{run}.{slug}.{8-char-uuid}\`. the timestamp
+  is what the backstop reads, and the run stamp is what a run's own teardown matches
+
+## safe to delete
+
+all contents of this directory can be safely deleted at any time.
+temp directories are ephemeral and should not contain important data.
+"
+`;
+
+exports[`genTempDir acceptance given: [case5] a temp directory created by genTempDir when: [t0] we check physical location then: 🔴 and BOTH views of the returned path are shaped as here — the symlink view is what it hands back, the physical view is where the bytes live 1`] = `
+{
+  "resolved": "<tmp>/test-fns/<repo>/.temp/<ts>.<run>.path-shape.<hex>",
+  "returned": "<checkouts>/<repo>/.temp/genTempDir.symlink/<ts>.<run>.path-shape.<hex>",
+  "returnedIsTheSymlinkView": true,
+}
+`;
+
+exports[`genTempDir acceptance given: [case12] the four git states a caller can reach, rendered side by side when: [t0] each is driven through the contract then: 🔴 the four read as here, and differ from one another 1`] = `
+{
+  "clone, NO git — not a repo at all": {
+    "log": "<exits nonzero>",
+    "status": "<exits nonzero>",
+  },
+  "git: true, clone — committed": {
+    "log": "<sha> fixture
+<sha> began",
+    "status": "",
+  },
+  "git: true, clone — left untracked": {
+    "log": "<sha> began",
+    "status": "?? file.txt",
+  },
+  "git: true, no clone": {
+    "log": "<sha> began",
+    "status": "",
+  },
+}
+`;

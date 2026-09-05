@@ -2,8 +2,10 @@ import { given, then, when } from '@src/contract';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { genTempDir, isTempDir } from './genTempDir';
-import { resetPruneThrottle } from './pruneStale';
+import { genTempDir } from './genTempDir';
+import { GATE_SWEPT_ENV_KEY, RUN_ID_ENV_KEY } from './getOneRunId';
+import { isTempDir } from './isTempDir';
+import { hasPrunedThisProcess, resetPruneThrottle } from './pruneStale';
 
 describe('genTempDir', () => {
   const createdDirs: string[] = [];
@@ -21,6 +23,109 @@ describe('genTempDir', () => {
     }
     createdDirs.length = 0;
   });
+
+  /**
+   * .what = runs `act` with RUN_ID_ENV_KEY set to `value` (or absent, on null),
+   *         and restores whatever was there before — even when `act` throws
+   * .why = 🔴 the restore sits in a `finally`, never after the assertion. on the
+   *        happy path alone, a single failed expect leaves `rfeedface` set for
+   *        every later test in this file, each of which then reads as ENHOOKED.
+   *        one red test cascades into a file of unrelated reds, and the true cause
+   *        sits in a `process.env` line thirty tests above the first failure
+   */
+  const withRunId = <T>(input: { value: string | null }, act: () => T): T => {
+    const before = process.env[RUN_ID_ENV_KEY];
+    try {
+      if (input.value === null) delete process.env[RUN_ID_ENV_KEY];
+      if (input.value !== null) process.env[RUN_ID_ENV_KEY] = input.value;
+      return act();
+    } finally {
+      if (before === undefined) delete process.env[RUN_ID_ENV_KEY];
+      if (before !== undefined) process.env[RUN_ID_ENV_KEY] = before;
+    }
+  };
+
+  /**
+   * .what = runs `act` with GATE_SWEPT_ENV_KEY set (or absent, on null), and
+   *         restores whatever was there before — even when `act` throws
+   * .why = this repo DOGFOODS the autoprune hooks, so its own `setupAutoprune`
+   *        stamps this key on every run of this very suite. a test that reads the
+   *        gate's skip must therefore control the key outright; one that merely
+   *        inherits it grades the host runner's config rather than the product
+   */
+  const withGateSwept = <T>(
+    input: { value: string | null },
+    act: () => T,
+  ): T => {
+    const before = process.env[GATE_SWEPT_ENV_KEY];
+    try {
+      if (input.value === null) delete process.env[GATE_SWEPT_ENV_KEY];
+      if (input.value !== null) process.env[GATE_SWEPT_ENV_KEY] = input.value;
+      return act();
+    } finally {
+      if (before === undefined) delete process.env[GATE_SWEPT_ENV_KEY];
+      if (before !== undefined) process.env[GATE_SWEPT_ENV_KEY] = before;
+    }
+  };
+
+  given(
+    '[caseGate] the age gate fires only where it is the ONLY reclaim',
+    () => {
+      // .why = the gate rides genTempDir, which runs per WORKER process. a run
+      //        whose setup already swept did so ONCE, in the main process before
+      //        any fork — so to fire here too would cost one full directory scan
+      //        per worker, per invocation, in the exact environment this behavior
+      //        exists for
+      //
+      // .why THIS AXIS = the cases key on the SWEEP STAMP, never on the run id.
+      //      the skip lives inside `pruneStaleOnce` and reads a stamp that records
+      //      the sweep itself; a run id would only be a proxy for it, true while
+      //      one function does both and free to drift after — so `[t2]` below pins
+      //      the two apart
+      when('[t0] this run already swept, at its global setup', () => {
+        then('genTempDir does NOT re-fire the gate', () => {
+          resetPruneThrottle();
+          withGateSwept({ value: '2026-01-19T12:34:56.789Z' }, () => {
+            const tempDir = genTempDir({ slug: 'gate-enhooked' });
+            createdDirs.push(tempDir);
+
+            expect(hasPrunedThisProcess()).toBe(false);
+          });
+        });
+      });
+
+      when('[t1] no sweep is on record — the unhooked consumer', () => {
+        then('genTempDir DOES fire the gate, their only reclaim', () => {
+          resetPruneThrottle();
+          withGateSwept({ value: null }, () => {
+            const tempDir = genTempDir({ slug: 'gate-unhooked' });
+            createdDirs.push(tempDir);
+
+            expect(hasPrunedThisProcess()).toBe(true);
+          });
+        });
+      });
+
+      when('[t2] a run id EXISTS, but no sweep was ever recorded', () => {
+        then('🔴 the gate still fires — the id was never the fact', () => {
+          // 🔴 the case that pins the two facts apart. a skip keyed on the run id
+          // makes this combination unreachable by construction (one function mints
+          // the id and sweeps), so a state that arises from a nested runner, a
+          // pre-empted setup, or an inherited env gets no clamp at all — and it
+          // would SKIP the unhooked consumer's only reclaim
+          resetPruneThrottle();
+          withRunId({ value: 'rfeedface' }, () =>
+            withGateSwept({ value: null }, () => {
+              const tempDir = genTempDir({ slug: 'gate-id-no-sweep' });
+              createdDirs.push(tempDir);
+
+              expect(hasPrunedThisProcess()).toBe(true);
+            }),
+          );
+        });
+      });
+    },
+  );
 
   given('genTempDir is called with a slug', () => {
     when('invoked', () => {

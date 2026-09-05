@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`autoprune, from inside a real VITEST acceptance run > [case1] the vitest journey this config declares and never drove > [t0] a maintainer opens the config this suite runs under > 🔴 it wires the ONE key vitest has, at the contract subpath 1`] = `
+[
+  "globalSetup: ['./src/contract/autoprune.setup.vitest.ts'],",
+]
+`;
+
+exports[`autoprune, from inside a real VITEST acceptance run > [case1] the vitest journey this config declares and never drove > [t3] the name THIS runner writes, volatile bytes masked > 🔴 it renders the shape the jest arm renders, under vitest own loader 1`] = `
+{
+  "isTempDir": true,
+  "name": "<ts>.<run>.vitest-shape.<hex>",
+  "rootViewsDiffer": true,
+  "rootViewsNameOnePlace": true,
+  "sitsUnderSymlinkRoot": true,
+}
+`;
