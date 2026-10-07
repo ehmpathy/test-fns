@@ -58,6 +58,50 @@ export interface RepeatableState {
 }
 
 /**
+ * .what = one repeatable block an attempt runs inside, by its two names
+ * .why = a snapshot key must not carry the attempt ordinal, so every attempt checks
+ *        against one baseline. the scope names the exact text to strip from the key
+ *
+ * @example
+ * { nameAttempt: 'when: the ask, attempt 2', nameBase: 'when: the ask' }
+ */
+export interface RepeatableScope {
+  /**
+   * .what = the registered name, with the attempt ordinal
+   * .why = the exact span of text a snapshot key carries today
+   */
+  nameAttempt: string;
+
+  /**
+   * .what = the name without the attempt ordinal
+   * .why = the span of text the key must carry instead
+   */
+  nameBase: string;
+}
+
+/**
+ * .what = the repeatable scopes that enclose the block under registration
+ * .why = nested repeatables (a when.repeatably inside a given.repeatably) each add an
+ *        ordinal to the key, so every one of them must be stripped
+ */
+let currentRepeatableScopes: RepeatableScope[] = [];
+
+/**
+ * .what = get the repeatable scopes that enclose the block under registration
+ * .why = then() captures them at registration, for use when its test runs
+ */
+export const getCurrentRepeatableScopes = (): RepeatableScope[] =>
+  currentRepeatableScopes;
+
+/**
+ * .what = set the repeatable scopes that enclose the block under registration
+ * .why = called by the repeatably describes and the nested describe wrappers
+ */
+export const setCurrentRepeatableScopes = (scopes: RepeatableScope[]): void => {
+  currentRepeatableScopes = scopes;
+};
+
+/**
  * .what = registry for repeatably state keyed by describe path
  * .why = explicit scope — state is looked up by path, not implicit global
  */
@@ -125,17 +169,21 @@ export const wrapDescribeCallback = (input: {
   name: string;
   fn: () => void;
 }): (() => void) => {
-  // capture repeatably context at registration time (survives vitest's deferred callback)
+  // capture repeatably context + scopes at registration time (survives vitest's deferred callback)
   const capturedCtx = getCurrentRepeatableContext();
+  const capturedScopes = getCurrentRepeatableScopes();
   return () => {
     describeStack.push(input.name);
-    // re-propagate captured context for nested describe callbacks
+    // re-propagate captured context + scopes for nested describe callbacks
     const prevCtx = getCurrentRepeatableContext();
+    const prevScopes = getCurrentRepeatableScopes();
     if (capturedCtx) setCurrentRepeatableContext(capturedCtx);
+    setCurrentRepeatableScopes(capturedScopes);
     try {
       input.fn();
     } finally {
       setCurrentRepeatableContext(prevCtx);
+      setCurrentRepeatableScopes(prevScopes);
       describeStack.pop();
     }
   };

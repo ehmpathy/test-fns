@@ -4,9 +4,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 // .note = RELATIVE, never the @src alias. this module sits on the globalTeardown
 //         path, which a runner loads OUTSIDE its moduleNameMapper
+import {
+  asErrnoCode,
+  ERRNOS_ENTRY_ABSENT,
+} from '../../../infra/isomorph.fs/asErrnoCode';
 import type { TestRunner } from '../../../infra/isomorph.test/detectTestRunner';
+import { getOneRunnerVersion } from '../../../infra/isomorph.test/getOneRunnerVersion';
 import { asTempDirRun } from '../computeTempDirName';
-import { getOneRunnerVersion } from './getOneRunnerVersion';
 
 /**
  * .what = asserts the run id reached the workers that allocated dirs
@@ -89,7 +93,7 @@ export const assertMintChainHeld = (input: {
   //         human at a terminal. metadata would render the same five facts a
   //         second time, as JSON, below the tree a human just read
   //
-  // .note = the 💥 STAYS, and it is the one place this behavior departs from 🧹.
+  // .note = the 💥 stays, and it is the one place this behavior departs from 🧹.
   //         every other message here is a notice the run survives; this one means
   //         the run is over and the reclaim silently matches zero from here on. a
   //         fatal event that wears the same badge as eight benign ones is a label
@@ -131,7 +135,11 @@ const isMadeSince = (input: {
   try {
     const stat = fs.statSync(path.join(input.tmpDir, input.name));
     return stat.mtimeMs >= input.since.getTime();
-  } catch {
+  } catch (error) {
+    // a dir pruned between the list and the stat is gone, so it is no orphan. any
+    // other fault surfaces, so a broken read never passes as "predates us"
+    if (!ERRNOS_ENTRY_ABSENT.includes(asErrnoCode({ error }) ?? ''))
+      throw error;
     return false;
   }
 };

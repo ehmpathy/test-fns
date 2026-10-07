@@ -5,20 +5,33 @@ import { globals } from '@src/infra/isomorph.test/getTestGlobals';
 
 import {
   getCurrentRepeatableContext,
+  getCurrentRepeatableScopes,
   getDescribePath,
+  type RepeatableScope,
   type RepeatableState,
   registryDescribeRepeatable,
   setCurrentRepeatableContext,
+  setCurrentRepeatableScopes,
   wrapDescribeCallback,
 } from './registryDescribeRepeatable';
+import { TIMEOUT_MAX_MS } from './repeatably/attempt/budget/getOneTestBudget';
+import { setAttemptPassed } from './repeatably/attempt/setAttemptPassed';
+import { setAttemptStarted } from './repeatably/attempt/setAttemptStarted';
+import { withAttemptWithheldReport } from './repeatably/attempt/withheld/withAttemptWithheldReport';
+import { genRepeatableState } from './repeatably/genRepeatableState';
+import {
+  genRepeatableTestBody,
+  type VitestTestContext,
+} from './repeatably/genRepeatableTestBody';
 
 export const getNumberRange = (input: {
   start: number;
   end: number;
 }): number[] => {
-  // Calculate the length of the range
+  // compute the length of the range
   const length = input.end - input.start + 1;
-  // Create an array with the specified range
+
+  // build an array that spans the range
   return Array.from({ length }, (_, i) => input.start + i);
 };
 
@@ -192,74 +205,14 @@ given.repeatably =
   <F extends (context: { attempt: number }) => void>(
     desc: string,
     fn: SyncCallback<F>,
-  ): void => {
-    const criteria = configuration.criteria ?? 'EVERY';
-
-    // EVERY: create N describe blocks, all must pass
-    if (criteria === 'EVERY') {
-      for (const attempt of getNumberRange({
-        start: 1,
-        end: configuration.attempts,
-      })) {
-        given(`${desc}, attempt ${attempt}`, () =>
-          (fn as (context: { attempt: number }) => void)({ attempt }),
-        );
-      }
-      return;
-    }
-
-    // SOME: create N describe blocks, skip subsequent on success
-    if (criteria === 'SOME') {
-      // shared state across all attempts (mutable, scoped to this repeatably block)
-      const state: RepeatableState = {
-        criteria: 'SOME',
-        anyAttemptPassed: false,
-        thisAttemptFailed: false,
-        thisAttemptIndex: 0,
-        allAttemptsQuant: configuration.attempts,
-        anyError: null,
-      };
-
-      for (const attempt of getNumberRange({
-        start: 1,
-        end: configuration.attempts,
-      })) {
-        given(`${desc}, attempt ${attempt}`, () => {
-          // register state by current path (explicit key, direct reference)
-          const path = getDescribePath();
-          registryDescribeRepeatable.set(path, state);
-
-          // reset failure flag and set current attempt at start of this attempt's run
-          globals().beforeAll(() => {
-            state.thisAttemptFailed = false;
-            state.thisAttemptIndex = attempt;
-          });
-
-          // mark success after attempt completes without failures
-          globals().afterAll(() => {
-            if (!state.thisAttemptFailed && !state.anyAttemptPassed) {
-              state.anyAttemptPassed = true;
-            }
-          });
-
-          // set context for nested when/then to capture (survives vitest deferred callbacks)
-          setCurrentRepeatableContext(state);
-          try {
-            // invoke user callback (registers useBeforeAll, when, then, etc)
-            (fn as (context: { attempt: number }) => void)({ attempt });
-          } finally {
-            setCurrentRepeatableContext(null);
-          }
-        });
-      }
-      return;
-    }
-
-    throw new UnexpectedCodePathError(
-      'configuration.criteria was neither EVERY nor SOME',
-      { configuration },
-    );
-  };
+  ): void =>
+    setAttemptsRepeatable({
+      describe: given,
+      prefix: 'given',
+      desc,
+      configuration,
+      fn: fn as (context: { attempt: number }) => void,
+    });
 
 /**
  * describe the event (action or trigger) that occurs within a scene
@@ -304,74 +257,98 @@ when.repeatably =
   <F extends (context: { attempt: number }) => void>(
     desc: string,
     fn: SyncCallback<F>,
-  ): void => {
-    const criteria = configuration.criteria ?? 'EVERY';
+  ): void =>
+    setAttemptsRepeatable({
+      describe: when,
+      prefix: 'when',
+      desc,
+      configuration,
+      fn: fn as (context: { attempt: number }) => void,
+    });
 
-    // EVERY: create N describe blocks, all must pass
-    if (criteria === 'EVERY') {
-      for (const attempt of getNumberRange({
-        start: 1,
-        end: configuration.attempts,
-      })) {
-        when(`${desc}, attempt ${attempt}`, () =>
-          (fn as (context: { attempt: number }) => void)({ attempt }),
-        );
-      }
-      return;
-    }
-
-    // SOME: create N describe blocks, skip subsequent on success
-    if (criteria === 'SOME') {
-      // shared state across all attempts (mutable, scoped to this repeatably block)
-      const state: RepeatableState = {
-        criteria: 'SOME',
-        anyAttemptPassed: false,
-        thisAttemptFailed: false,
-        thisAttemptIndex: 0,
-        allAttemptsQuant: configuration.attempts,
-        anyError: null,
-      };
-
-      for (const attempt of getNumberRange({
-        start: 1,
-        end: configuration.attempts,
-      })) {
-        when(`${desc}, attempt ${attempt}`, () => {
-          // register state by current path (explicit key, direct reference)
-          const path = getDescribePath();
-          registryDescribeRepeatable.set(path, state);
-
-          // reset failure flag and set current attempt at start of this attempt's run
-          globals().beforeAll(() => {
-            state.thisAttemptFailed = false;
-            state.thisAttemptIndex = attempt;
-          });
-
-          // mark success after attempt completes without failures
-          globals().afterAll(() => {
-            if (!state.thisAttemptFailed && !state.anyAttemptPassed) {
-              state.anyAttemptPassed = true;
-            }
-          });
-
-          // set context for nested then to capture (survives vitest deferred callbacks)
-          setCurrentRepeatableContext(state);
-          try {
-            // invoke user callback (registers useBeforeAll, then, etc)
-            (fn as (context: { attempt: number }) => void)({ attempt });
-          } finally {
-            setCurrentRepeatableContext(null);
-          }
-        });
-      }
-      return;
-    }
-
+/**
+ * .what = registers one describe block per attempt of a given/when.repeatably
+ * .why = given and when repeat the same way; one body keeps the two in step
+ *
+ * .note = per criteria:
+ *         - EVERY: N blocks, all must pass
+ *         - SOME: N blocks that share one state; a pass skips the rest, and a failed
+ *           non-final attempt is withheld (see genRepeatableTestBody)
+ *         both push a scope, so every snapshot key inside drops `, attempt N`
+ */
+const setAttemptsRepeatable = (input: {
+  describe: (desc: string, fn: () => void) => void;
+  prefix: 'given' | 'when';
+  desc: string;
+  configuration: { attempts: number; criteria?: 'EVERY' | 'SOME' };
+  fn: (context: { attempt: number }) => void;
+}): void => {
+  const criteria = input.configuration.criteria ?? 'EVERY';
+  if (criteria !== 'EVERY' && criteria !== 'SOME')
     throw new UnexpectedCodePathError(
       'configuration.criteria was neither EVERY nor SOME',
-      { configuration },
+      { configuration: input.configuration },
     );
-  };
+
+  // SOME shares one state across all attempts (mutable, scoped to this block)
+  const state: RepeatableState | null =
+    criteria === 'SOME'
+      ? genRepeatableState({ attempts: input.configuration.attempts })
+      : null;
+
+  for (const attempt of getNumberRange({
+    start: 1,
+    end: input.configuration.attempts,
+  })) {
+    const descAttempt = `${input.desc}, attempt ${attempt}`;
+    const scope: RepeatableScope = {
+      nameAttempt: `${input.prefix}: ${descAttempt}`,
+      nameBase: `${input.prefix}: ${input.desc}`,
+    };
+    input.describe(descAttempt, () => {
+      // track this attempt on the shared state (SOME only)
+      setAttemptTracked({ state, attempt });
+
+      // expose context + scope to nested blocks (survives vitest deferred callbacks)
+      const ctxBefore = getCurrentRepeatableContext();
+      const scopesBefore = getCurrentRepeatableScopes();
+      setCurrentRepeatableContext(state ?? ctxBefore);
+      setCurrentRepeatableScopes([...scopesBefore, scope]);
+      try {
+        // invoke user callback (registers useBeforeAll, when, then, etc)
+        input.fn({ attempt });
+      } finally {
+        setCurrentRepeatableContext(ctxBefore);
+        setCurrentRepeatableScopes(scopesBefore);
+      }
+    });
+  }
+};
+
+/**
+ * .what = registers one SOME attempt on its block's shared state
+ * .why = the attempt's hooks reset the failure flag before it runs and mark the
+ *        block passed after it, which is how a later attempt knows to skip
+ * .note = an EVERY block holds no state, so there is naught to track
+ */
+const setAttemptTracked = (input: {
+  state: RepeatableState | null;
+  attempt: number;
+}): void => {
+  const state = input.state;
+  if (!state) return;
+
+  // register state by current path (explicit key, direct reference)
+  registryDescribeRepeatable.set(getDescribePath(), state);
+
+  // start this attempt on the shared state, before its run
+  globals().beforeAll(() =>
+    setAttemptStarted({ ctx: state, attempt: input.attempt }),
+  );
+
+  // mark success after attempt completes without failures
+  globals().afterAll(() => setAttemptPassed({ ctx: state }));
+};
 
 /**
  * assert the effect (expected outcome) that should be observed
@@ -383,94 +360,71 @@ when.repeatably =
 const then: Test = ((...input: TestInput<void>): void => {
   const [name, testFn] = castToTestInput({ input, prefix: 'then' });
 
-  // check if we're in a repeatably SOME context
-  // context is captured at registration time via wrapDescribeCallback
-  const repeatableCtx = getCurrentRepeatableContext();
+  // context + scopes are captured at registration time via wrapDescribeCallback
+  setThenTest({
+    name,
+    testFn: testFn ?? null,
+    ctx: getCurrentRepeatableContext(),
+    scopes: getCurrentRepeatableScopes(),
+  });
+}) as Test;
 
-  // only use wrapper for SOME criteria (skip-on-success behavior)
-  // EVERY criteria and non-repeatably contexts use passthrough (no wrapper overhead)
-  if (!repeatableCtx || repeatableCtx.criteria !== 'SOME') {
-    globals().test(name, testFn);
+/**
+ * .what = registers one then-test, wrapped when it sits inside a repeatable block
+ * .why = inside a repeatable block a test must check one snapshot baseline, and under
+ *        SOME a failed non-final attempt must be withheld (see genRepeatableTestBody).
+ *        outside any repeatable block, the test registers untouched
+ *
+ * .note = under SOME the test registers with TIMEOUT_MAX_MS, so the runner's own timer
+ *         never fires; the wrapper races the body against the real budget instead
+ */
+const setThenTest = (input: {
+  name: string;
+  /**
+   * .note = null for a body-less test (a `then` with no fn)
+   */
+  testFn: (() => Promise<unknown>) | ((cb: any) => void) | null;
+  ctx: RepeatableState | null;
+  scopes: RepeatableScope[];
+}): void => {
+  // only SOME criteria withholds; EVERY only strips the key
+  const ctxSome = input.ctx?.criteria === 'SOME' ? input.ctx : null;
+
+  // with no body, register untouched
+  if (!input.testFn) {
+    globals().test(input.name, undefined);
     return;
   }
 
-  // in repeatably SOME context: wrap with skip-on-success and failure detection
+  // outside any repeatable block, register untouched
+  if (!ctxSome && input.scopes.length === 0) {
+    globals().test(input.name, input.testFn);
+    return;
+  }
+
+  // inside a repeatable block: wrap the body
   const runner = getTestRunner();
+  const body = genRepeatableTestBody({
+    testFn: input.testFn,
+    ctx: ctxSome,
+    scopes: input.scopes,
+    runner,
+  });
+  const timeout = ctxSome ? TIMEOUT_MAX_MS : undefined;
 
-  // vitest: use testContext parameter for proper skip markers
+  // vitest: hand the body its test context, for the task chain + skip marker
   if (runner === 'vitest') {
-    globals().test(name, async (testContext: { skip?: () => void }) => {
-      // skip if prior attempt succeeded
-      if (repeatableCtx.anyAttemptPassed) {
-        // eslint-disable-next-line no-console -- explicit skip message in test output
-        console.log('      🫧  [skipped] prior repeatably attempt passed');
-        if (testContext?.skip) testContext.skip();
-        return;
-      }
-
-      // failure detection via try/catch
-      if (testFn) {
-        try {
-          await (testFn as () => Promise<unknown>)();
-        } catch (error) {
-          repeatableCtx.thisAttemptFailed = true;
-          // preserve first error for final attempt
-          if (!repeatableCtx.anyError && error instanceof Error) {
-            repeatableCtx.anyError = error;
-          }
-          // only throw on final attempt - earlier failures are retried
-          if (
-            repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant
-          ) {
-            throw repeatableCtx.anyError ?? error;
-          }
-          // else: swallow error, let subsequent attempts try
-        }
-      }
-    });
+    globals().test(
+      input.name,
+      (testContext: VitestTestContext) => body(testContext),
+      timeout,
+    );
     return;
   }
 
   // jest: no testContext parameter (jest interprets first param as done callback)
-  if (runner === 'jest') {
-    globals().test(name, async () => {
-      // skip if prior attempt succeeded
-      if (repeatableCtx.anyAttemptPassed) {
-        // eslint-disable-next-line no-console -- explicit skip message in test output
-        console.log('      🫧  [skipped] prior repeatably attempt passed');
-        return;
-      }
-
-      // failure detection via try/catch
-      if (testFn) {
-        try {
-          await (testFn as () => Promise<unknown>)();
-        } catch (error) {
-          repeatableCtx.thisAttemptFailed = true;
-          // preserve first error for final attempt
-          if (!repeatableCtx.anyError && error instanceof Error) {
-            repeatableCtx.anyError = error;
-          }
-          // only throw on final attempt - earlier failures are retried
-          if (
-            repeatableCtx.thisAttemptIndex === repeatableCtx.allAttemptsQuant
-          ) {
-            throw repeatableCtx.anyError ?? error;
-          }
-          // else: swallow error, let subsequent attempts try
-        }
-      }
-    });
-    return;
-  }
-
-  throw new UnexpectedCodePathError(
-    'unsupported test runner for repeatably SOME',
-    {
-      runner,
-    },
-  );
-}) as Test;
+  globals().test(input.name, () => body(null), timeout);
+};
 
 // add methods to then
 then.only = (...input: TestInput<void>): void =>
@@ -492,85 +446,128 @@ then.repeatably =
     if (input.length !== 2 && input.length !== 3)
       throw new UnexpectedCodePathError('unsupported input length', { input });
 
-    if (configuration.criteria === 'SOME') {
-      const runner = getTestRunner();
-      const testFn = globals().test;
+    // cast the shared shape every variant registers from
+    const [name] = castToTestInput({ input: [input[0]], prefix: 'then' });
+    const fnAttempt = input.length === 2 ? input[1] : input[2];
+    const shape = { name, fnAttempt, attempts: configuration.attempts };
 
-      // vitest: use native retry option (test-scoped, no pollution)
-      if (runner === 'vitest') {
-        let attempt = 0;
-        globals().beforeEach(() => attempt++);
-        const [name, fn] = castToTestInput({
-          input:
-            input.length === 2
-              ? [input[0], () => input[1]({ attempt })]
-              : [input[0], input[1], () => input[2]({ attempt })],
-          prefix: 'then',
-        });
-        (testFn as any)(name, { retry: configuration.attempts }, fn);
-        return;
-      }
-
-      // jest: use N-test blocks with skip-on-success (avoids jest.retryTimes pollution)
-      if (runner === 'jest') {
-        // shared state across all attempts
-        const state = { anyAttemptPassed: false };
-
-        for (const attempt of getNumberRange({
-          start: 1,
-          end: configuration.attempts,
-        })) {
-          const [name] = castToTestInput({ input: [input[0]], prefix: 'then' });
-          const userFn =
-            input.length === 2
-              ? () => input[1]({ attempt })
-              : () => input[2]({ attempt });
-
-          testFn(`${name}, attempt ${attempt}`, async () => {
-            // skip if prior attempt succeeded
-            if (state.anyAttemptPassed) {
-              // eslint-disable-next-line no-console -- explicit skip message in test output
-              console.log(
-                '      🫧  [skipped] prior repeatably attempt passed',
-              );
-              return;
-            }
-
-            try {
-              await userFn();
-              state.anyAttemptPassed = true;
-            } catch (error) {
-              // only throw on final attempt
-              if (attempt === configuration.attempts) throw error;
-            }
-          });
-        }
-        return;
-      }
-
+    // SOME on vitest: the runner's native retry
+    const runner = getTestRunner();
+    if (configuration.criteria === 'SOME' && runner === 'vitest') {
+      setThenRepeatablySomeViaNativeRetry(shape);
       return;
     }
 
+    // SOME on jest: one test per attempt, a failed non-final attempt withheld
+    if (configuration.criteria === 'SOME' && runner === 'jest') {
+      setThenRepeatablySomeViaWithhold(shape);
+      return;
+    }
+
+    // EVERY: one test per attempt, each must pass
     if (configuration.criteria === 'EVERY') {
-      for (const attempt of getNumberRange({
-        start: 1,
-        end: configuration.attempts,
-      })) {
-        if (input.length === 2)
-          then(input[0] + `, attempt ${attempt}`, () => input[1]({ attempt }));
-        if (input.length === 3)
-          then(input[0] + `, attempt ${attempt}`, input[1], () =>
-            input[2]({ attempt }),
-          );
-      }
+      setThenRepeatablyEvery(shape);
       return;
     }
 
     throw new UnexpectedCodePathError(
       'configuration.criteria was neither EVERY nor SOME',
-      { configuration },
+      { configuration, runner },
     );
   };
+
+/**
+ * .what = registers a SOME then.repeatably on vitest, via the runner's native retry
+ * .why = vitest retry is test-scoped, so it pollutes no neighbor; the wrapper logs
+ *        each withheld try, since the runner itself names none
+ * .note = vitest `retry` counts retries, not runs, so `attempts` runs need
+ *         `attempts - 1` retries — the same count jest registers as tests
+ * .note = the test registers with TIMEOUT_MAX_MS, so vitest's own timer never fires;
+ *         the wrapper races each try against the real budget, so a hang is withheld
+ *         and named like any other failure
+ */
+const setThenRepeatablySomeViaNativeRetry = (input: {
+  name: string;
+  fnAttempt: (input: { attempt: number }) => unknown;
+  attempts: number;
+}): void => {
+  const retriesMax = input.attempts - 1;
+  const fnReported = withAttemptWithheldReport({
+    testFn: input.fnAttempt,
+    retriesMax,
+    runner: 'vitest',
+  });
+  (globals().test as any)(
+    input.name,
+    { retry: retriesMax, timeout: TIMEOUT_MAX_MS },
+    fnReported,
+  );
+};
+
+/**
+ * .what = registers a SOME then.repeatably on jest, as one test per attempt
+ * .why = jest.retryTimes pollutes the whole file, so each attempt is its own test
+ *        that skips once a prior attempt passed, and withholds a non-final failure
+ */
+const setThenRepeatablySomeViaWithhold = (input: {
+  name: string;
+  fnAttempt: (input: { attempt: number }) => unknown;
+  attempts: number;
+}): void => {
+  // shared state across all attempts; each test is one attempt
+  const state = genRepeatableState({ attempts: input.attempts });
+  const scopesBefore = getCurrentRepeatableScopes();
+
+  // register one test per attempt
+  for (const attempt of getNumberRange({ start: 1, end: input.attempts })) {
+    const nameAttempt = `${input.name}, attempt ${attempt}`;
+    const body = genRepeatableTestBody({
+      testFn: () => input.fnAttempt({ attempt }),
+      ctx: state,
+      scopes: [...scopesBefore, { nameAttempt, nameBase: input.name }],
+      runner: 'jest',
+    });
+
+    globals().test(
+      nameAttempt,
+      async () => {
+        // start this attempt on the shared state; the body reads it to withhold
+        setAttemptStarted({ ctx: state, attempt });
+
+        // run the attempt; a failure on a non-final attempt is withheld
+        await body(null);
+
+        // mark success after the attempt completes without failures
+        setAttemptPassed({ ctx: state });
+      },
+      TIMEOUT_MAX_MS,
+    );
+  }
+};
+
+/**
+ * .what = registers an EVERY then.repeatably, as one test per attempt
+ * .why = every attempt must pass, so each is a plain test that checks one
+ *        snapshot baseline
+ */
+const setThenRepeatablyEvery = (input: {
+  name: string;
+  fnAttempt: (input: { attempt: number }) => unknown;
+  attempts: number;
+}): void => {
+  for (const attempt of getNumberRange({ start: 1, end: input.attempts })) {
+    const nameAttempt = `${input.name}, attempt ${attempt}`;
+    setThenTest({
+      name: nameAttempt,
+      testFn: async () => input.fnAttempt({ attempt }),
+      ctx: getCurrentRepeatableContext(),
+      scopes: [
+        ...getCurrentRepeatableScopes(),
+        { nameAttempt, nameBase: input.name },
+      ],
+    });
+  }
+};
 
 /**
  * .what = namespace object for BDD-style test helpers

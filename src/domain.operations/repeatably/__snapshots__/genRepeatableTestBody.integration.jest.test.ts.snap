@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genRepeatableTestBody given: [case1] a vitest attempt whose runner budget cannot be read (here, under jest) when: [t0] the body runs then: the surfaced message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: could not read the test timeout budget from the runner
+
+{
+  "runner": "vitest@<version>",
+  "field": "globalThis.__vitest_worker__.config.testTimeout",
+  "hint": "test-fns reads this runner internal to own the deadline of a repeatable attempt; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;

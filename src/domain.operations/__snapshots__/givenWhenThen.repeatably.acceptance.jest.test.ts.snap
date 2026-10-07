@@ -1,0 +1,89 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`givenWhenThen.repeatably given: [case1] jest, a snapshot that mismatches on attempt 1 only when: [t0] the baseline is written, then the flake runs under --ci then: the skipped line matches its snapshot 1`] = `
+"🫧  [skipped] prior repeatably attempt passed
+🫧  [skipped] prior repeatably attempt passed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case1] jest, a snapshot that mismatches on attempt 1 only when: [t0] the baseline is written, then the flake runs under --ci then: the withheld line matches its snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: expect(received).toMatchSnapshot() — Snapshot name: \`given: [case1] a value checked against a snapshot when: [t0] the value is derived then: it matches the snapshot 1\`"`;
+
+exports[`givenWhenThen.repeatably given: [case2] jest, an assertion that throws on attempt 1 only when: [t0] the flake runs then: the withheld lines match their snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: expect(received).toEqual(expected) // deep equality"`;
+
+exports[`givenWhenThen.repeatably given: [case2] vitest, an assertion that throws on attempt 1 only when: [t0] the flake runs then: the skipped lines match their snapshot 1`] = `
+"🫧  [skipped] prior repeatably attempt passed
+🫧  [skipped] prior repeatably attempt passed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case2] vitest, an assertion that throws on attempt 1 only when: [t0] the flake runs then: the withheld lines match their snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: expected 'bad' to deeply equal 'good'"`;
+
+exports[`givenWhenThen.repeatably given: [case6] jest, a baseline written before the key rename when: [t0] the legacy baseline is checked under --ci then: the rename hint matches its snapshot 1`] = `"🫧  test-fns: this snapshot key was renamed — keys inside a repeatable block no longer carry an attempt suffix such as ", attempt 1". run the suite once with -u, then commit the snapshot file."`;
+
+exports[`givenWhenThen.repeatably given: [case7] vitest, a snapshot that mismatches on attempt 1 only when: [t0] the baseline is written, then the flake runs as ci then: the withheld lines match their snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: Snapshot \`given: [case1] a value checked against a snapshot > when: [t0] the value is derived > then: it matches the snapshot 1\` mismatched"`;
+
+exports[`givenWhenThen.repeatably given: [case8] jest, then.repeatably over a snapshot that flakes once when: [t0] the baseline is written, then the flake runs under --ci then: the withheld lines match their snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: expect(received).toMatchSnapshot() — Snapshot name: \`given: [case8] a value checked by then.repeatably when: [t0] the value is derived then: it matches the snapshot 1\`"`;
+
+exports[`givenWhenThen.repeatably given: [case8] vitest, then.repeatably over a snapshot that flakes once when: [t0] the baseline is written, then the flake runs under --ci then: the withheld lines match their snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: Snapshot \`given: [case8] a value checked by then.repeatably > when: [t0] the value is derived > then: it matches the snapshot 1\` mismatched"`;
+
+exports[`givenWhenThen.repeatably given: [case9] jest, an ask that hangs past the budget when: [t0] the ask hangs on attempts 1 and 2, and returns on 3 then: the withheld overrun lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: useThen: tried to access value before test ran
+🫧  [withheld] attempt 2 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)
+🫧  [withheld] attempt 2 failed, a retry follows: UnexpectedCodePathError: useThen: tried to access value before test ran"
+`;
+
+exports[`givenWhenThen.repeatably given: [case9] vitest, a then.repeatably body that hangs on attempt 1 when: [t0] the check runs then: the withheld lines match their snapshot 1`] = `"🫧  [withheld] attempt 1 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)"`;
+
+exports[`givenWhenThen.repeatably given: [case9] vitest, an ask that hangs past the budget when: [t0] the ask hangs on attempts 1 and 2, and returns on 3 then: the withheld lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: useThen: tried to access value before test ran
+🫧  [withheld] attempt 2 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)
+🫧  [withheld] attempt 2 failed, a retry follows: UnexpectedCodePathError: useThen: tried to access value before test ran"
+`;
+
+exports[`givenWhenThen.repeatably given: [case9] vitest, an ask that hangs past the budget when: [t1] the ask hangs on every attempt then: the withheld lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: useThen: tried to access value before test ran
+🫧  [withheld] attempt 2 failed, a retry follows: ✋ ConstraintError: exceeded the 1500ms budget (the test timeout)
+🫧  [withheld] attempt 2 failed, a retry follows: UnexpectedCodePathError: useThen: tried to access value before test ran"
+`;
+
+exports[`givenWhenThen.repeatably given: [case10] jest, a setup hook that fails once when: [t0] the setup throws on attempt 1, and passes on 2 then: the skipped lines match their snapshot 1`] = `
+"🫧  [skipped] prior repeatably attempt passed (setup)
+🫧  [skipped] prior repeatably attempt passed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case10] jest, a setup hook that fails once when: [t0] the setup throws on attempt 1, and passes on 2 then: the withheld lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: ENOENT: no such fixture
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: usePrep: tried to access value before setup completed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case10] vitest, a setup hook that fails once when: [t0] the setup throws on attempt 1, and passes on 2 then: the skipped lines match their snapshot 1`] = `
+"🫧  [skipped] prior repeatably attempt passed (setup)
+🫧  [skipped] prior repeatably attempt passed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case10] vitest, a setup hook that fails once when: [t0] the setup throws on attempt 1, and passes on 2 then: the withheld lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: ENOENT: no such fixture
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: usePrep: tried to access value before setup completed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case26] jest, a useBeforeEach that fails once when: [t0] the run completes then: the withheld lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: each-setup-failure
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: usePrep: tried to access value before setup completed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case26] vitest, a useBeforeEach that fails once when: [t0] the run completes then: the withheld lines match their snapshot 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: each-setup-failure
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: usePrep: tried to access value before setup completed"
+`;
+
+exports[`givenWhenThen.repeatably given: [case27] vitest, a then.repeatably that never passes when: [t0] the run completes then: the two non-final attempts are withheld 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: check-failure-of-attempt-1-drive-1
+🫧  [withheld] attempt 2 failed, a retry follows: check-failure-of-attempt-2-drive-2"
+`;
+
+exports[`givenWhenThen.repeatably given: [case28] jest, a setup that fails once, read by two thens when: [t0] the run completes then: the first withheld line is the cause, then one echo per then that read it 1`] = `
+"🫧  [withheld] attempt 1 failed, a retry follows: two-then-setup-failure
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: usePrep: tried to access value before setup completed
+🫧  [withheld] attempt 1 failed, a retry follows: UnexpectedCodePathError: usePrep: tried to access value before setup completed"
+`;

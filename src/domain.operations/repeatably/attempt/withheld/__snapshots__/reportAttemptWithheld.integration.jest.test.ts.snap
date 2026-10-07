@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`reportAttemptWithheld given: [case1] each failure kind when: [t0] a thrown error logs its first line only then: the line matches its snapshot 1`] = `"🫧  [withheld] attempt 2 failed, a retry follows: boom"`;
+
+exports[`reportAttemptWithheld given: [case1] each failure kind when: [t1] a blank-led message logs its first non-blank line then: the line matches its snapshot 1`] = `"🫧  [withheld] attempt 2 failed, a retry follows: setup-failure-of-drive-1"`;
+
+exports[`reportAttemptWithheld given: [case1] each failure kind when: [t2] a jest snapshot mismatch also names the snapshot then: the line matches its snapshot 1`] = `"🫧  [withheld] attempt 2 failed, a retry follows: expect(received).toMatchSnapshot() — Snapshot name: \`a value 1\`"`;
+
+exports[`reportAttemptWithheld given: [case1] each failure kind when: [t3] a non-error throw logs its string form then: the line matches its snapshot 1`] = `"🫧  [withheld] attempt 2 failed, a retry follows: plain string thrown"`;

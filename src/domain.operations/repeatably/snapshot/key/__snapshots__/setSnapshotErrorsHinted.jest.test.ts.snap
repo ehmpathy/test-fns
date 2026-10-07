@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`setSnapshotErrorsHinted given: [case1] a snapshot error beside an unrelated throw when: [t0] the failures are hinted then: the snapshot error message matches its snapshot 1`] = `
+"expect(received).toMatchSnapshot()
+
+New snapshot was not written.
+
+🫧  test-fns: this snapshot key was renamed — keys inside a repeatable block no longer carry an attempt suffix such as ", attempt 1". run the suite once with -u, then commit the snapshot file."
+`;
