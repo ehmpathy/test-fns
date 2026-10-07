@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`setSnapshotKeyStripped given: [case3] the vitest runner, with a task whose name is no string when: [t0] the key is stripped then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the vitest runner no longer exposes task.name as a string
+
+{
+  "field": "task.name",
+  "nameType": "number",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;

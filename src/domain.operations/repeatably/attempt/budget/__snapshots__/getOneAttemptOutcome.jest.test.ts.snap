@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getOneAttemptOutcome given: [case3] a body that overruns the budget when: [t0] the outcome is read then: the overrun message matches its snapshot 1`] = `
+"✋ ConstraintError: exceeded the 20ms budget (the test timeout)
+
+{
+  "budgetMs": 20,
+  "hint": "raise it via jest.setTimeout, vi.setConfig, or testTimeout in config"
+}"
+`;

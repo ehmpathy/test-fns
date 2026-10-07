@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getOneTestBudget given: [case2] a runner whose internal state is absent when: [t0] the vitest budget is read under jest then: it fails loud with the runner version and the absent field 1`] = `
+"💥 MalfunctionError: repeatably: could not read the test timeout budget from the runner
+
+{
+  "runner": "vitest@<version>",
+  "field": "globalThis.__vitest_worker__.config.testTimeout",
+  "hint": "test-fns reads this runner internal to own the deadline of a repeatable attempt; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneTestBudget given: [case3] the jest runner, whose budget field is absent when: [t0] the jest budget is read with testTimeout removed then: it fails loud with the runner version and the jest field 1`] = `
+"💥 MalfunctionError: repeatably: could not read the test timeout budget from the runner
+
+{
+  "runner": "jest@<version>",
+  "field": "globalThis[Symbol(JEST_STATE_SYMBOL)].testTimeout",
+  "hint": "test-fns reads this runner internal to own the deadline of a repeatable attempt; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;

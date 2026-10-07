@@ -1,0 +1,101 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t0] expect.getState is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes expect.getState
+
+{
+  "runner": "jest@<version>",
+  "field": "expect.getState",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t1] expect.getState() is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes expect.getState()
+
+{
+  "runner": "jest@<version>",
+  "field": "expect.getState()",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t2] expect.getState().snapshotState is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes expect.getState().snapshotState
+
+{
+  "runner": "jest@<version>",
+  "field": "expect.getState().snapshotState",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t3] snapshotState._counters is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes snapshotState._counters
+
+{
+  "runner": "jest@<version>",
+  "field": "snapshotState._counters",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t4] snapshotState._counters.get is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes snapshotState._counters.get
+
+{
+  "runner": "jest@<version>",
+  "field": "snapshotState._counters.get",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t5] snapshotState._counters.set is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes snapshotState._counters.set
+
+{
+  "runner": "jest@<version>",
+  "field": "snapshotState._counters.set",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t6] snapshotState._snapshotData is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes snapshotState._snapshotData
+
+{
+  "runner": "jest@<version>",
+  "field": "snapshotState._snapshotData",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t7] expect.getState().suppressedErrors is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes expect.getState().suppressedErrors
+
+{
+  "runner": "jest@<version>",
+  "field": "expect.getState().suppressedErrors",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case2] the jest runner, with one internal absent when: [t8] snapshotState.unmatched is absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes snapshotState.unmatched
+
+{
+  "runner": "jest@<version>",
+  "field": "snapshotState.unmatched",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;
+
+exports[`getOneExpectSnapshotState given: [case3] the message a maintainer reads when: [t0] the snapshot counters are absent then: the message matches its snapshot 1`] = `
+"💥 MalfunctionError: repeatably: the jest runner no longer exposes snapshotState._counters
+
+{
+  "runner": "jest@<version>",
+  "field": "snapshotState._counters",
+  "hint": "test-fns reads this runner internal to give each repeatable attempt one snapshot key; please report the runner version at https://github.com/ehmpathy/test-fns/issues"
+}"
+`;

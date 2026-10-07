@@ -150,6 +150,29 @@ this gives you the best of both worlds:
 
 **fix the root cause instead.** flaky deterministic tests that retry hide bugs and lead to unreliable systems. `repeatably` with `SOME` is only appropriate for behavior that is **inherently non-deterministic** by design.
 
+## .what a non-final SOME attempt absorbs
+
+under `criteria: 'SOME'`, a failure in any attempt but the last never fails the file. test-fns withholds it, logs `🫧  [withheld] attempt N failed, a retry follows: ...`, and runs the next attempt. this holds for:
+
+- a thrown error or a failed `expect`
+- a snapshot mismatch
+- a timeout — each attempt's deadline equals the test timeout (`jest.setTimeout`, `vi.setConfig`, or `testTimeout` in config)
+- a `useBeforeAll` / `useBeforeEach` setup failure
+
+the final attempt surfaces its own failure. a raw `beforeAll` sits outside the retry — use `useBeforeAll` for setup the retry must cover.
+
+one line logs per withheld test. when a `useThen` factory or a `useBeforeAll` setup fails, each `then` that reads its result fails too, and logs its own line (`... tried to access value before ...`). the first line of the attempt is the cause; the rest are its echo.
+
+a timed-out attempt cannot be cancelled — js has no promise cancel. its slow call runs on beside the next attempt; the result is discarded, but its side effects (a temp dir, a paid api call) still land. keep a retried body idempotent. on jest, a late `toMatchSnapshot()` mismatch from that slow call can land in the next attempt's tally — a false red, never a false green.
+
+do not nest a `'SOME'` block inside another `'SOME'` block: the outer block sees no failure from the inner one and stops after its first attempt. the inner block still retries and still turns the file red on its final failure.
+
+under a vitest esm import, `useThen`, `useBeforeAll`, and every export but `given`, `when`, `bdd`, `getNumberRange` import as `undefined` (see `limitation.esm-thenable-then-export`); load them via `createRequire(import.meta.url)('test-fns')`.
+
+## .snapshot keys
+
+a snapshot inside a repeatable block is keyed without `, attempt N`, so every attempt checks one baseline. a snapshot file from an earlier version holds the old keys: resnap once with `-u` and commit it. a `--ci` run on the old file fails with a hint that names the rename.
+
 ## .context parameter
 
 all `repeatably` variants provide an `{ attempt }` parameter to the callback:

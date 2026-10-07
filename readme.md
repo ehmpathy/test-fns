@@ -61,6 +61,8 @@ describe('doesPlantNeedWater', () => {
 
 vitest requires a workaround because ESM's thenable protocol prevents direct `then` imports.
 
+the same protocol settles a vitest esm `import { ... } from 'test-fns'` to `given`, `when`, `bdd`, and `getNumberRange` alone — `useThen`, `useBeforeAll`, `useWhen`, `genTempDir`, and the rest import as `undefined`. load them via `createRequire(import.meta.url)('test-fns')` until a fix lands.
+
 **option 1: globals via setup file (recommended)**
 
 ```ts
@@ -213,11 +215,49 @@ when.repeatably({
 
 this enables reliable tests for probabilistic systems where multiple assertions must pass together. if attempt 1 fails on `thenB`, attempt 2 will re-run both `thenA` and `thenB` from scratch.
 
+**what a non-final `'SOME'` attempt absorbs**
+
+under `criteria: 'SOME'`, a failure in any attempt but the last does not fail the file. test-fns withholds it, logs one line per withheld test, and runs the next attempt:
+
+```
+🫧  [withheld] attempt 1 failed, a retry follows: <first line of the failure>
+```
+
+for a jest snapshot mismatch, the line also names the snapshot (`— Snapshot name: ...`).
+
+when a `useThen` factory or a `useBeforeAll` setup fails, each `then` that reads its result fails too, and each logs its own line (`useThen: tried to access value before test ran`, `usePrep: tried to access value before setup completed`). read the first line of the attempt for the cause; the lines after it are its echo.
+
+this covers every failure kind inside the block:
+- a thrown error or a failed `expect`
+- a snapshot mismatch
+- a timeout — test-fns owns each attempt's deadline, equal to the test timeout you set (via `jest.setTimeout`, `vi.setConfig`, or `testTimeout` in config)
+- a `useBeforeAll` / `useBeforeEach` setup that throws or overruns
+
+the final attempt surfaces its own failure, so a block that fails on every attempt still turns the file red. a raw jest/vitest `beforeAll` sits outside the retry and fails the file as before; use `useBeforeAll` for setup the retry should cover.
+
+a timed-out attempt cannot be cancelled — js has no way to stop a promise. its slow call runs on beside the next attempt; the result is discarded, but its side effects (a temp dir, a paid api call) still land. keep a retried body idempotent. on jest, a late `toMatchSnapshot()` mismatch from that slow call can also land in the next attempt's tally, so a clean attempt may be withheld or the file may report an extra failed snapshot — a false red, never a false green.
+
+do not nest a `'SOME'` block inside another `'SOME'` block: the outer block sees no failure from the inner one and stops after its first attempt. the inner block still retries, and its final attempt still turns the file red.
+
+**snapshot keys carry no attempt ordinal**
+
+every attempt checks one baseline. a snapshot inside a repeatable block is keyed on the test name without its `, attempt N` — the reported test name still shows which attempt ran.
+
+> **migration:** a snapshot file written by an earlier version holds keys with `, attempt N`. run the suite once with `-u` (jest) or `--update` (vitest) and commit the snapshot file. until then, a `--ci` run fails with a hint that names the rename:
+>
+> ```
+> New snapshot was not written. The update flag must be explicitly passed to write a new snapshot.
+> …
+> 🫧  test-fns: this snapshot key was renamed — keys inside a repeatable block no longer carry an attempt suffix such as ", attempt 1". run the suite once with -u, then commit the snapshot file.
+> ```
+
+> **vitest `then.repeatably` with `SOME`** now runs the body `attempts` times, as on jest. an earlier version ran it `attempts + 1` times on vitest, so a body that passed only on that extra run now fails; raise `attempts` if it needs the room.
+
 **skip-on-success behavior**
 
 once any attempt passes (all `then` blocks succeed), subsequent attempts are skipped entirely:
 - all `then` blocks are skipped
-- `useBeforeAll` and `useAfterAll` callbacks are skipped
+- `useBeforeAll` and `useBeforeEach` setups are skipped
 - expensive setup operations do not execute
 
 **recommended pattern for ci/cd**

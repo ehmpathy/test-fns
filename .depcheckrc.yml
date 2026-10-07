@@ -1,3 +1,6 @@
+ignore-patterns:
+  # agent tool tree (role links, actor brains); not package source
+  - .agent
 ignores:
   - depcheck
   - declapract
@@ -9,6 +12,7 @@ ignores:
   - rhachet
   - rhachet-brains-anthropic
   - rhachet-brains-fireworksai
+  - rhachet-brains-openrouter
   - rhachet-roles-bhrain
   - rhachet-roles-bhuild
   - rhachet-roles-ehmpathy
